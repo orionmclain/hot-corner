@@ -101,6 +101,7 @@ _gamelog_cache: TTLCache = TTLCache(maxsize=1000, ttl=3600)
 _teams_cache: TTLCache = TTLCache(maxsize=5, ttl=86400)
 _roster_cache: TTLCache = TTLCache(maxsize=60, ttl=3600)
 _leaderboard_cache: TTLCache = TTLCache(maxsize=50, ttl=3600)
+_team_gamelog_cache: TTLCache = TTLCache(maxsize=60, ttl=3600)
 _lock = Lock()
 
 
@@ -218,6 +219,33 @@ def _cached_gamelog(player_id: int, season: int, group: str) -> list[dict]:
     games = [parse_fn(s) for s in data["stats"][0]["splits"]]
     with _lock:
         _gamelog_cache[key] = games
+    return games
+
+
+def _cached_team_gamelog(team_id: int, season: int, group: str) -> list[dict]:
+    """Two-tier cache: in-memory TTL → MLB Stats API. Returns per-game rows ordered by date."""
+    key = (team_id, season, group)
+    with _lock:
+        if key in _team_gamelog_cache:
+            return _team_gamelog_cache[key]
+
+    r = requests.get(
+        f"{MLB_API_BASE}/teams/{team_id}/stats",
+        params={"stats": "gameLog", "group": group, "season": season, "gameType": "R"},
+        timeout=15,
+    )
+    if r.status_code != 200:
+        raise HTTPException(status_code=502, detail="Failed to fetch team game log from MLB API")
+    data = r.json()
+    if not data.get("stats") or not data["stats"][0].get("splits"):
+        raise HTTPException(
+            status_code=404,
+            detail=f"No {group} game log found for team {team_id} in season {season}",
+        )
+    parse_fn = parse_pitching_game if group == "pitching" else parse_hitting_game
+    games = [parse_fn(s) for s in data["stats"][0]["splits"]]
+    with _lock:
+        _team_gamelog_cache[key] = games
     return games
 
 
@@ -738,6 +766,100 @@ def get_team_hot_cold(
                 results.append(r)
 
     return sorted(results, key=lambda p: p["name"])
+
+
+@app.get("/teams/{team_id}/stretches")
+def get_team_stretches(
+    team_id: int,
+    season: int = Query(CURRENT_YEAR),
+    length: int = Query(15, ge=3, le=60),
+    stat: str = Query("ops"),
+):
+    if stat not in ALL_STAT_LABELS:
+        raise HTTPException(status_code=400, detail=f"Invalid stat. Choose from: {', '.join(ALL_STAT_LABELS)}")
+
+    is_pitching = stat in PITCHING_STAT_LABELS
+    group = "pitching" if is_pitching else "hitting"
+    games = _cached_team_gamelog(team_id, season, group)
+
+    total_games = len(games)
+    if total_games < length:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Only {total_games} games played in {season} — stretch length {length} is too long.",
+        )
+
+    compute = compute_pitching_stat if is_pitching else compute_stat
+    ps = build_prefix_sums(games, is_pitching)
+
+    windows = []
+    for i in range(total_games - length + 1):
+        j = i + length
+        value = window_value(ps, i, j, stat, is_pitching)
+
+        if is_pitching:
+            outs = ps["outs"][j] - ps["outs"][i]
+            window = {
+                "window_index": i,
+                "start_game": i + 1, "end_game": j,
+                "start_date": games[i]["date"], "end_date": games[j - 1]["date"],
+                "value": value, "value_display": format_stat(value, stat),
+                "k":    ps["k"][j]  - ps["k"][i],
+                "bb":   ps["bb"][j] - ps["bb"][i],
+                "er":   ps["er"][j] - ps["er"][i],
+                "hr":   ps["hr"][j] - ps["hr"][i],
+                "hits": ps["h"][j]  - ps["h"][i],
+                "ip":   round(outs / 3, 2),
+                "ip_display": fmt_ip(outs),
+            }
+        else:
+            window = {
+                "window_index": i,
+                "start_game": i + 1, "end_game": j,
+                "start_date": games[i]["date"], "end_date": games[j - 1]["date"],
+                "value": value, "value_display": format_stat(value, stat),
+                "hr":   ps["hr"][j]  - ps["hr"][i],
+                "rbi":  ps["rbi"][j] - ps["rbi"][i],
+                "sb":   ps["sb"][j]  - ps["sb"][i],
+                "hits": ps["h"][j]   - ps["h"][i],
+                "ab":   ps["ab"][j]  - ps["ab"][i],
+                "bb":   ps["bb"][j]  - ps["bb"][i],
+                "k":    ps["k"][j]   - ps["k"][i],
+            }
+        windows.append(window)
+
+    if stat in LOWER_IS_BETTER:
+        best_idx = min(range(len(windows)), key=lambda i: windows[i]["value"])
+        worst_idx = max(range(len(windows)), key=lambda i: windows[i]["value"])
+    else:
+        best_idx = max(range(len(windows)), key=lambda i: windows[i]["value"])
+        worst_idx = min(range(len(windows)), key=lambda i: windows[i]["value"])
+
+    season_value, season_value_display = compute_season_value(games, stat, length, compute)
+
+    values = [w["value"] for w in windows]
+    mean_val = sum(values) / len(values) if values else 0
+    variance = sum((v - mean_val) ** 2 for v in values) / len(values) if values else 0
+    streakiness = round((math.sqrt(variance) / mean_val) * 100, 1) if mean_val > 0 else 0.0
+
+    return {
+        "team_id": team_id,
+        "season": season,
+        "total_games": total_games,
+        "stretch_length": length,
+        "stat": stat,
+        "stat_label": ALL_STAT_LABELS.get(stat, stat.upper()),
+        "season_value": season_value,
+        "season_value_display": season_value_display,
+        "streakiness": streakiness,
+        "best_index": best_idx,
+        "worst_index": worst_idx,
+        "best": windows[best_idx],
+        "worst": windows[worst_idx],
+        "windows": windows,
+        "hot_cold": compute_hot_cold(windows[-1]["value"], season_value, stat),
+        "current_window": windows[-1],
+    }
 
 
 # ── Leaderboard ───────────────────────────────────────────────────────────────

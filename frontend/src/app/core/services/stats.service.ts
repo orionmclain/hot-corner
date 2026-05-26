@@ -297,6 +297,12 @@ export class StatsService {
     return this.http.get<LeaderboardData>(`${this.apiUrl}/leaderboard`, { params });
   }
 
+  getTeamStretches(teamId: number, season: number, length: number, stat: string): Observable<StretchData> {
+    return this.http.get<StretchData>(`${this.apiUrl}/teams/${teamId}/stretches`, {
+      params: { season, length, stat },
+    });
+  }
+
   getTeamLeaderboard(stat: string, length: number, season: number, pitcherType?: string): Observable<TeamLeaderboardData> {
     const params: any = { stat, length, season };
     if (pitcherType) params['pitcher_type'] = pitcherType;

@@ -21,6 +21,114 @@
     <div class="page-error">⚠️ {{ error }}</div>
   }
 
+  <!-- ── Team Performance Chart ── -->
+  <div class="team-perf-section">
+    <div class="team-perf-header">
+      <div class="perf-title">Team Performance</div>
+      <div class="perf-controls">
+        <div class="mode-tabs">
+          <button class="mode-tab" [class.active]="chartMode === 'offense'" (click)="setChartMode('offense')">Offense</button>
+          <button class="mode-tab" [class.active]="chartMode === 'pitching'" (click)="setChartMode('pitching')">Pitching</button>
+        </div>
+        <div class="stat-chips">
+          @for (s of chartStatOptions; track s.value) {
+            <button class="stat-chip" [class.active]="chartStat === s.value"
+              (click)="chartStat = s.value; loadTeamStretches()">{{ s.label }}</button>
+          }
+        </div>
+        <select class="perf-season-select" [(ngModel)]="chartSeason" (change)="loadTeamStretches()">
+          @for (yr of seasons; track yr) {
+            <option [value]="yr">{{ yr }}</option>
+          }
+        </select>
+        <div class="slider-inline">
+          <span class="slider-bound">5G</span>
+          <input class="range-input" type="range" min="5" max="50" step="1"
+            [(ngModel)]="chartLength" (change)="loadTeamStretches()" />
+          <span class="slider-bound">50G</span>
+          <strong class="slider-val">{{ chartLength }}G</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="perf-chart-wrapper">
+      @if (chartLoading) {
+        <div class="chart-overlay">
+          <svg class="spin" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5">
+            <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+          </svg>
+        </div>
+      }
+      @if (chartError) {
+        <div class="chart-error-msg">
+          <span>⚠️</span><span>{{ chartError }}</span>
+        </div>
+      }
+      <canvas #teamChartCanvas [style.opacity]="chartLoading || chartError ? 0 : 1"></canvas>
+    </div>
+
+    @if (chartData && !chartLoading && !chartError) {
+      <div class="perf-summary-grid">
+        <div class="summary-card best-card">
+          <div class="card-label best-label">Best Stretch</div>
+          <div class="card-value">{{ chartData.best.value_display }}</div>
+          <div class="card-range">Games {{ chartData.best.start_game }}–{{ chartData.best.end_game }}</div>
+          <div class="card-dates">{{ chartData.best.start_date }} → {{ chartData.best.end_date }}</div>
+          @if (chartMode === 'pitching') {
+            <div class="card-counts">
+              <span>{{ chartData.best.k }}K</span>
+              <span>{{ chartData.best.bb }}BB</span>
+              <span>{{ chartData.best.er }}ER</span>
+            </div>
+          } @else {
+            <div class="card-counts">
+              <span>{{ chartData.best.hits }}H</span>
+              <span>{{ chartData.best.hr }}HR</span>
+              <span>{{ chartData.best.rbi }}RBI</span>
+            </div>
+          }
+        </div>
+
+        <div class="summary-card worst-card">
+          <div class="card-label worst-label">Worst Stretch</div>
+          <div class="card-value">{{ chartData.worst.value_display }}</div>
+          <div class="card-range">Games {{ chartData.worst.start_game }}–{{ chartData.worst.end_game }}</div>
+          <div class="card-dates">{{ chartData.worst.start_date }} → {{ chartData.worst.end_date }}</div>
+          @if (chartMode === 'pitching') {
+            <div class="card-counts">
+              <span>{{ chartData.worst.k }}K</span>
+              <span>{{ chartData.worst.bb }}BB</span>
+              <span>{{ chartData.worst.er }}ER</span>
+            </div>
+          } @else {
+            <div class="card-counts">
+              <span>{{ chartData.worst.hits }}H</span>
+              <span>{{ chartData.worst.hr }}HR</span>
+              <span>{{ chartData.worst.rbi }}RBI</span>
+            </div>
+          }
+        </div>
+
+        <div class="summary-card season-card">
+          <div class="card-label">{{ chartData.season }} Season</div>
+          <div class="card-value accent">{{ chartData.season_value_display }}</div>
+          <div class="card-stat-name">{{ seasonStatLabel(chartData) }}</div>
+          <div class="card-sub">{{ chartData.total_games }} games played</div>
+        </div>
+
+        <div class="summary-card streak-card">
+          <div class="card-label">Consistency</div>
+          <div [class]="'card-value ' + streakClass(chartData)">{{ streakLabel(chartData) }}</div>
+          <div class="card-sub">{{ chartData.streakiness }}% variation</div>
+          <div class="streak-bar-track">
+            <div [class]="'streak-bar-fill ' + streakClass(chartData)"
+                 [style.width.%]="Math.min(chartData.streakiness, 100)"></div>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+
   @if (!loading && !error) {
 
     <!-- ── Position Players ── -->
