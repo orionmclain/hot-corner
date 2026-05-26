@@ -353,7 +353,6 @@
 }
 
 /* ── Team table ── */
-.team-row { cursor: default; }
 
 .team-name-cell { vertical-align: middle; }
 .team-name-inner {

@@ -251,6 +251,10 @@ export class Leaderboard implements OnInit {
       return;
     }
 
+    this.view = s.view;
+    this.selectedStat = s.selectedStat;
+    this.pitcherType = s.pitcherType;
+
     if (this.season === new Date().getFullYear()) {
       this.statsService.getDefaultLength(this.season).subscribe({
         next: ({ games_played }) => {
@@ -335,5 +339,10 @@ export class Leaderboard implements OnInit {
   goToPlayer(p: LeaderboardPlayer) {
     this.saveState();
     this.router.navigate(['/player', p.player_id]);
+  }
+
+  goToTeam(t: TeamLeaderboardEntry) {
+    this.saveState();
+    this.router.navigate(['/team', t.team_id]);
   }
 }

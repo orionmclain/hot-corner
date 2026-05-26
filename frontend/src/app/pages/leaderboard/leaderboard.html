@@ -211,7 +211,7 @@
         </thead>
         <tbody>
           @for (t of sortedTeams; track t.team_id; let i = $index) {
-            <tr class="lb-row team-row">
+            <tr class="lb-row team-row" (click)="goToTeam(t)">
               <td class="rank-cell">
                 <span [class]="'rank-badge rank-' + Math.min(i + 1, 4)">{{ i + 1 }}</span>
               </td>
