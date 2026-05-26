@@ -1,0 +1,19 @@
+name: Nightly DB Sync
+
+on:
+  schedule:
+    - cron: '0 6 * * *'  # 6am UTC = 2am ET
+  workflow_dispatch:       # allows manual trigger from GitHub UI
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r backend/requirements.txt
+      - run: python backend/sync.py
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
