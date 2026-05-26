@@ -1,0 +1,63 @@
+<div class="home-page">
+  <div class="hero">
+    <div class="hero-badge">MLB Analytics</div>
+    <h1 class="hero-title">Baseball Stretch<br><span class="hero-accent">Analysis</span></h1>
+    <p class="hero-sub">
+      Explore any player's season through a rolling-window lens.
+      Find hot streaks, cold spells, and how consistent they really were.
+    </p>
+
+    <div class="search-wrapper">
+      <app-search-bar
+        size="lg"
+        placeholder="Search for a player — e.g. Jarren Duran..."
+        (playerSelected)="onSelectPlayer($event)"
+      />
+    </div>
+
+    <div class="hint-row">
+      <span class="hint">Try:</span>
+      <button class="hint-chip" (click)="triggerHint('Shohei Ohtani')">Shohei Ohtani</button>
+      <button class="hint-chip" (click)="triggerHint('Aaron Judge')">Aaron Judge</button>
+      <button class="hint-chip" (click)="triggerHint('Tarik Skubal')">Tarik Skubal</button>
+    </div>
+  </div>
+
+  <div class="features">
+    <div class="feature-card">
+      <div class="feature-icon">📈</div>
+      <h3>Rolling Stretch Chart</h3>
+      <p>Visualize performance across every N-game window of a season.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔥</div>
+      <h3>Hot & Cold Streaks</h3>
+      <p>Instantly spot the best and worst stretches with highlighted markers.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📊</div>
+      <h3>Consistency Score</h3>
+      <p>Quantify how streaky vs. consistent a player is over the full year.</p>
+    </div>
+  </div>
+
+  <!-- ── Browse Teams ── -->
+  @if (teams.length) {
+    <div class="teams-section">
+      <div class="teams-header">
+        <h2 class="teams-title">Browse by Team</h2>
+        <a routerLink="/leaderboard" class="leaderboard-link">
+          View Leaderboard →
+        </a>
+      </div>
+      <div class="teams-grid">
+        @for (team of teams; track team.id) {
+          <a class="team-chip" [routerLink]="['/team', team.id]" [title]="team.name">
+            <img class="team-chip-logo" [src]="team.logo_url" [alt]="team.abbreviation" />
+            <span class="team-chip-abbr">{{ team.abbreviation }}</span>
+          </a>
+        }
+      </div>
+    </div>
+  }
+</div>

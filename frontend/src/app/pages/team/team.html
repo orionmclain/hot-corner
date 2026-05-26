@@ -1,0 +1,165 @@
+<div class="team-page">
+
+  <!-- ── Header ── -->
+  <div class="team-hero">
+    @if (team) {
+      <img class="team-logo" [src]="team.logo_url" [alt]="team.name" />
+      <div class="team-info">
+        <div class="team-division">{{ team.division }}</div>
+        <h1 class="team-name">{{ team.name }}</h1>
+      </div>
+    } @else if (loading) {
+      <div class="skeleton circle lg"></div>
+      <div class="skeleton-lines">
+        <div class="skeleton line short"></div>
+        <div class="skeleton line long"></div>
+      </div>
+    }
+  </div>
+
+  @if (error) {
+    <div class="page-error">⚠️ {{ error }}</div>
+  }
+
+  @if (!loading && !error) {
+
+    <!-- ── Position Players ── -->
+    <div class="roster-section">
+      <div class="section-header">
+        <div class="section-label">Position Players</div>
+        <div class="section-controls">
+          <div class="stat-chips">
+            @for (s of hittingStats; track s.value) {
+              <button class="stat-chip" [class.active]="hitterStat === s.value"
+                (click)="hitterStat = s.value; loadHotCold()">{{ s.label }}</button>
+            }
+          </div>
+          <div class="slider-inline">
+            <span class="slider-bound">3G</span>
+            <input class="range-input" type="range" min="3" max="30" step="1"
+              [(ngModel)]="hitterLength" (change)="loadHotCold()" />
+            <span class="slider-bound">30G</span>
+            <strong class="slider-val">{{ hitterLength }}G</strong>
+          </div>
+        </div>
+      </div>
+      <div class="player-grid">
+        @for (p of positionPlayers; track p.id) {
+          <div class="player-card" (click)="goToPlayer(p.id)">
+            <img class="player-thumb" [src]="p.headshot" [alt]="p.name" />
+            <div class="player-card-info">
+              <div class="player-card-meta">
+                <span class="player-card-pos">{{ p.position }}</span>
+                @if (p.jersey_number) { <span class="player-card-num">#{{ p.jersey_number }}</span> }
+              </div>
+              <div class="player-card-name">{{ p.name }}</div>
+              @if (!hotColdLoading && p.hot_cold) {
+                <div class="player-card-stat">
+                  <span class="hc-pill" [class]="p.hot_cold === 'on_fire' ? 'on-fire' : p.hot_cold">
+                    {{ p.hot_cold === 'on_fire' ? '🔥' : p.hot_cold === 'hot' ? '↑' : p.hot_cold === 'cold' ? '↓' : p.hot_cold === 'slumping' ? '❄️' : '—' }}
+                    {{ p.current_value_display }} {{ p.stat_label }}
+                  </span>
+                </div>
+              } @else if (hotColdLoading) {
+                <div class="skeleton line short" style="margin-top:6px;height:18px"></div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- ── Starting Pitchers ── -->
+    <div class="roster-section">
+      <div class="section-header">
+        <div class="section-label">Starting Pitchers</div>
+        <div class="section-controls">
+          <div class="stat-chips">
+            @for (s of pitchingStats; track s.value) {
+              <button class="stat-chip" [class.active]="spStat === s.value"
+                (click)="spStat = s.value; loadHotCold()">{{ s.label }}</button>
+            }
+          </div>
+          <div class="slider-inline">
+            <span class="slider-bound">3G</span>
+            <input class="range-input" type="range" min="3" max="30" step="1"
+              [(ngModel)]="spLength" (change)="loadHotCold()" />
+            <span class="slider-bound">30G</span>
+            <strong class="slider-val">{{ spLength }}G</strong>
+          </div>
+        </div>
+      </div>
+      <div class="player-grid">
+        @for (p of starters; track p.id) {
+          <div class="player-card" (click)="goToPlayer(p.id)">
+            <img class="player-thumb" [src]="p.headshot" [alt]="p.name" />
+            <div class="player-card-info">
+              <div class="player-card-meta">
+                <span class="player-card-pos">{{ p.position }}</span>
+                @if (p.jersey_number) { <span class="player-card-num">#{{ p.jersey_number }}</span> }
+              </div>
+              <div class="player-card-name">{{ p.name }}</div>
+              @if (!hotColdLoading && p.hot_cold) {
+                <div class="player-card-stat">
+                  <span class="hc-pill" [class]="p.hot_cold === 'on_fire' ? 'on-fire' : p.hot_cold">
+                    {{ p.hot_cold === 'on_fire' ? '🔥' : p.hot_cold === 'hot' ? '↑' : p.hot_cold === 'cold' ? '↓' : p.hot_cold === 'slumping' ? '❄️' : '—' }}
+                    {{ p.current_value_display }} {{ p.stat_label }}
+                  </span>
+                </div>
+              } @else if (hotColdLoading) {
+                <div class="skeleton line short" style="margin-top:6px;height:18px"></div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- ── Relief Pitchers ── -->
+    <div class="roster-section">
+      <div class="section-header">
+        <div class="section-label">Relief Pitchers</div>
+        <div class="section-controls">
+          <div class="stat-chips">
+            @for (s of pitchingStats; track s.value) {
+              <button class="stat-chip" [class.active]="rpStat === s.value"
+                (click)="rpStat = s.value; loadHotCold()">{{ s.label }}</button>
+            }
+          </div>
+          <div class="slider-inline">
+            <span class="slider-bound">3G</span>
+            <input class="range-input" type="range" min="3" max="30" step="1"
+              [(ngModel)]="rpLength" (change)="loadHotCold()" />
+            <span class="slider-bound">30G</span>
+            <strong class="slider-val">{{ rpLength }}G</strong>
+          </div>
+        </div>
+      </div>
+      <div class="player-grid">
+        @for (p of relievers; track p.id) {
+          <div class="player-card" (click)="goToPlayer(p.id)">
+            <img class="player-thumb" [src]="p.headshot" [alt]="p.name" />
+            <div class="player-card-info">
+              <div class="player-card-meta">
+                <span class="player-card-pos">{{ p.position }}</span>
+                @if (p.jersey_number) { <span class="player-card-num">#{{ p.jersey_number }}</span> }
+              </div>
+              <div class="player-card-name">{{ p.name }}</div>
+              @if (!hotColdLoading && p.hot_cold) {
+                <div class="player-card-stat">
+                  <span class="hc-pill" [class]="p.hot_cold === 'on_fire' ? 'on-fire' : p.hot_cold">
+                    {{ p.hot_cold === 'on_fire' ? '🔥' : p.hot_cold === 'hot' ? '↑' : p.hot_cold === 'cold' ? '↓' : p.hot_cold === 'slumping' ? '❄️' : '—' }}
+                    {{ p.current_value_display }} {{ p.stat_label }}
+                  </span>
+                </div>
+              } @else if (hotColdLoading) {
+                <div class="skeleton line short" style="margin-top:6px;height:18px"></div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+</div>

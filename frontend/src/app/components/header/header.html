@@ -1,0 +1,19 @@
+<header>
+  <a routerLink="/" class="logo">
+    <span class="logo-icon">⚾</span>
+    <span class="logo-text">Stretch<span class="logo-accent">Analysis</span></span>
+  </a>
+
+  <nav class="header-nav">
+    <a routerLink="/leaderboard" class="nav-link">Leaderboard</a>
+  </nav>
+
+  @if (showSearch) {
+    <div class="header-search-wrapper">
+      <app-search-bar
+        placeholder="Search for a player..."
+        (playerSelected)="onSelectPlayer($event)"
+      />
+    </div>
+  }
+</header>

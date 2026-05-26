@@ -1,0 +1,437 @@
+<div class="player-page">
+
+  <!-- ── Hero ── -->
+  @if (!compareInfo) {
+    <!-- Single player hero -->
+    <div class="player-hero">
+      @if (playerInfo) {
+        <img class="player-headshot" [src]="playerInfo.headshot" [alt]="playerInfo.name" />
+        <div class="player-info">
+          <div class="player-meta-row">
+            <span class="pos-badge" style="--color: #10b981">{{ playerInfo.position }}</span>
+            <span class="player-team">{{ playerInfo.team_name }}</span>
+            @if (playerInfo.jersey_number) { <span class="player-jersey">#{{ playerInfo.jersey_number }}</span> }
+            @if (stretchData?.hot_cold === 'on_fire') {
+              <span class="hc-badge on-fire">🔥 On Fire</span>
+            } @else if (stretchData?.hot_cold === 'hot') {
+              <span class="hc-badge hot">↑ Hot</span>
+            } @else if (stretchData?.hot_cold === 'cold') {
+              <span class="hc-badge cold">↓ Cold</span>
+            } @else if (stretchData?.hot_cold === 'slumping') {
+              <span class="hc-badge slumping">❄️ Slump</span>
+            }
+          </div>
+          <h1 class="player-name">{{ playerInfo.name }}</h1>
+          <div class="player-detail-row">
+            @if (playerInfo.bats) { <span>Bats {{ playerInfo.bats }}</span> }
+            @if (playerInfo.throws) { <span>Throws {{ playerInfo.throws }}</span> }
+            @if (playerInfo.debut_date) { <span>Debut {{ playerInfo.debut_date }}</span> }
+          </div>
+        </div>
+      } @else {
+        <div class="skeleton circle"></div>
+        <div class="skeleton-lines">
+          <div class="skeleton line short"></div>
+          <div class="skeleton line long"></div>
+          <div class="skeleton line medium"></div>
+        </div>
+      }
+    </div>
+  } @else {
+    <!-- Comparison hero -->
+    <div class="compare-hero">
+      <div class="compare-hero-player">
+        @if (playerInfo) {
+          <img class="player-headshot sm" [src]="playerInfo.headshot" [alt]="playerInfo.name" />
+          <div class="player-info">
+            <div class="player-meta-row">
+              <span class="pos-badge" style="--color: #10b981">{{ playerInfo.position }}</span>
+              <span class="player-team">{{ playerInfo.team_name }}</span>
+              @if (stretchData?.hot_cold === 'on_fire') {
+                <span class="hc-badge on-fire">🔥</span>
+              } @else if (stretchData?.hot_cold === 'hot') {
+                <span class="hc-badge hot">↑</span>
+              } @else if (stretchData?.hot_cold === 'cold') {
+                <span class="hc-badge cold">↓</span>
+              } @else if (stretchData?.hot_cold === 'slumping') {
+                <span class="hc-badge slumping">❄️</span>
+              }
+            </div>
+            <h2 class="player-name sm">{{ playerInfo.name }}</h2>
+          </div>
+        }
+      </div>
+
+      <div class="vs-divider">VS</div>
+
+      <div class="compare-hero-player">
+        @if (compareInfo) {
+          <img class="player-headshot sm" [src]="compareInfo.headshot" [alt]="compareInfo.name" />
+          <div class="player-info">
+            <div class="player-meta-row">
+              <span class="pos-badge" style="--color: #3b82f6">{{ compareInfo.position }}</span>
+              <span class="player-team">{{ compareInfo.team_name }}</span>
+              @if (compareStretchData?.hot_cold === 'on_fire') {
+                <span class="hc-badge on-fire">🔥</span>
+              } @else if (compareStretchData?.hot_cold === 'hot') {
+                <span class="hc-badge hot">↑</span>
+              } @else if (compareStretchData?.hot_cold === 'cold') {
+                <span class="hc-badge cold">↓</span>
+              } @else if (compareStretchData?.hot_cold === 'slumping') {
+                <span class="hc-badge slumping">❄️</span>
+              }
+            </div>
+            <h2 class="player-name sm">{{ compareInfo.name }}</h2>
+          </div>
+        } @else {
+          <div class="skeleton circle sm"></div>
+          <div class="skeleton-lines">
+            <div class="skeleton line short"></div>
+            <div class="skeleton line long"></div>
+          </div>
+        }
+        <button class="remove-compare-btn" (click)="removeComparePlayer()" title="Remove comparison">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- ── Compare bar ── -->
+  <div class="compare-bar">
+    @if (!compareId) {
+      <button class="compare-toggle-btn" (click)="showCompareSearch = !showCompareSearch">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        Compare Player
+      </button>
+
+      @if (showCompareSearch) {
+        <div class="compare-search-wrapper">
+          <app-search-bar
+            placeholder="Search player to compare..."
+            [excludeId]="playerId"
+            [positionFilter]="comparePositionFilter"
+            (playerSelected)="selectComparePlayer($event)"
+          />
+        </div>
+      }
+    }
+  </div>
+
+  <!-- ── Controls ── -->
+  <div class="controls-bar">
+    @if (isTwoWay) {
+      <div class="control-group">
+        <label class="control-label">Role</label>
+        <div class="stat-tabs">
+          <button class="stat-tab" [class.active]="twoWayMode === 'hitting'" (click)="setTwoWayMode('hitting')">Hitting</button>
+          <button class="stat-tab" [class.active]="twoWayMode === 'pitching'" (click)="setTwoWayMode('pitching')">Pitching</button>
+        </div>
+      </div>
+    }
+    <div class="control-group">
+      <label class="control-label">Season</label>
+      <select class="control-select" [(ngModel)]="season" (change)="loadStretches()">
+        @for (yr of seasons; track yr) {
+          <option [value]="yr">{{ yr }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="control-group stat-group">
+      <label class="control-label">Stat</label>
+      <div class="stat-tabs">
+        @for (opt of statOptions; track opt.value) {
+          <button
+            class="stat-tab"
+            [class.active]="selectedStat === opt.value"
+            (click)="selectedStat = opt.value; loadStretches()"
+          >{{ opt.label }}</button>
+        }
+      </div>
+    </div>
+
+    <div class="control-group slider-group">
+      <label class="control-label">
+        Stretch: <strong class="slider-value">{{ stretchLength }} games</strong>
+      </label>
+      <div class="slider-row">
+        <span class="slider-bound">{{ isPitcher ? 3 : 5 }}</span>
+        <input
+          class="range-input"
+          type="range" [min]="isPitcher ? 3 : 5" max="50" step="1"
+          [(ngModel)]="stretchLength"
+          (change)="loadStretches()"
+        />
+        <span class="slider-bound">50</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Chart ── -->
+  <div class="chart-section">
+    <div class="chart-header">
+      @if (stretchData) {
+        <div class="chart-title">
+          {{ stretchData.stat_label }} · {{ stretchData.stretch_length }}-Game Stretch
+          <span class="chart-season">{{ stretchData.season }}</span>
+        </div>
+        <div class="chart-legend">
+          @if (compareInfo) {
+            <span class="legend-item">
+              <span class="legend-line" style="background: #10b981"></span>{{ playerInfo?.name }}
+            </span>
+            <span class="legend-item">
+              <span class="legend-line" style="background: #3b82f6"></span>{{ compareInfo.name }}
+            </span>
+          }
+          <span class="legend-item"><span class="dot gold"></span>Best</span>
+          <span class="legend-item"><span class="dot red"></span>Worst</span>
+          <span class="legend-item"><span class="line-dash"></span>Season avg</span>
+        </div>
+      }
+    </div>
+
+    <div class="chart-wrapper">
+      @if (loading) {
+        <div class="chart-overlay">
+          <svg class="spin" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5">
+            <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+          </svg>
+        </div>
+      }
+      @if (error) {
+        <div class="chart-error">
+          <span>⚠️</span><span>{{ error }}</span>
+        </div>
+      }
+      @if (compareError && !error) {
+        <div class="chart-compare-error">
+          <span>⚠️ Comparison: {{ compareError }}</span>
+        </div>
+      }
+      <canvas #chartCanvas [style.opacity]="loading || error ? 0 : 1"></canvas>
+    </div>
+
+    <!-- ── Game log panel ── -->
+    @if (selectedWindow) {
+      <div class="game-log-panel">
+        <div class="game-log-header">
+          <div class="game-log-title">
+            <span class="game-log-dot" [style.background]="selectedWindowColor"></span>
+            <span class="game-log-player">{{ selectedWindowPlayerName }}</span>
+            <span class="game-log-range">
+              {{ selectedWindow.start_date }} → {{ selectedWindow.end_date }}
+              · Games {{ selectedWindow.start_game }}–{{ selectedWindow.end_game }}
+            </span>
+            <span class="game-log-value" [style.color]="selectedWindowColor">
+              {{ selectedWindow.value_display }}
+            </span>
+          </div>
+          <button class="game-log-close" (click)="closeGameLog()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        @if (gameLogLoading) {
+          <div class="game-log-loading">
+            <svg class="spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5">
+              <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+            </svg>
+          </div>
+        }
+
+        <div class="game-log-table-wrap" [style.display]="gameLogLoading ? 'none' : ''">
+          <table class="game-log-table">
+            @if (isPitchingStat(stretchData!.stat)) {
+              <thead>
+                <tr><th>Date</th><th>Opponent</th><th>IP</th><th>H</th><th>ER</th><th>BB</th><th>K</th><th>HR</th></tr>
+              </thead>
+              <tbody>
+                @for (g of selectedWindowGames; track g.date) {
+                  <tr>
+                    <td class="date-cell">{{ g.date }}</td>
+                    <td class="opp-cell">{{ g.opponent }}</td>
+                    <td>{{ g.ip_display }}</td>
+                    <td>{{ g.hits }}</td>
+                    <td [class.stat-bad]="(g.earnedRuns ?? 0) >= 4">{{ g.earnedRuns }}</td>
+                    <td>{{ g.baseOnBalls }}</td>
+                    <td [class.stat-good]="(g.strikeOuts ?? 0) >= 7">{{ g.strikeOuts }}</td>
+                    <td>{{ g.homeRuns }}</td>
+                  </tr>
+                }
+              </tbody>
+            } @else {
+              <thead>
+                <tr><th>Date</th><th>Opponent</th><th>AB</th><th>H</th><th>HR</th><th>RBI</th><th>BB</th><th>K</th><th>SB</th></tr>
+              </thead>
+              <tbody>
+                @for (g of selectedWindowGames; track g.date) {
+                  <tr>
+                    <td class="date-cell">{{ g.date }}</td>
+                    <td class="opp-cell">{{ g.opponent }}</td>
+                    <td>{{ g.atBats }}</td>
+                    <td [class.stat-good]="(g.hits ?? 0) >= 3">{{ g.hits }}</td>
+                    <td [class.stat-good]="(g.homeRuns ?? 0) >= 1">{{ g.homeRuns }}</td>
+                    <td>{{ g.rbi }}</td>
+                    <td>{{ g.baseOnBalls }}</td>
+                    <td>{{ g.strikeOuts }}</td>
+                    <td>{{ g.stolenBases }}</td>
+                  </tr>
+                }
+              </tbody>
+            }
+          </table>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- ── Summary ── -->
+  @if (stretchData && !loading && !error) {
+    @if (!compareStretchData) {
+      <!-- Single player cards -->
+      <div class="summary-grid">
+        <div class="summary-card best-card">
+          <div class="card-label best-label">Best Stretch</div>
+          <div class="card-value">{{ stretchData.best.value_display }}</div>
+          <div class="card-range">Games {{ stretchData.best.start_game }}–{{ stretchData.best.end_game }}</div>
+          <div class="card-dates">{{ stretchData.best.start_date }} → {{ stretchData.best.end_date }}</div>
+          @if (isPitchingStat(stretchData.stat)) {
+            <div class="card-counts">
+              <span>{{ stretchData.best.k }}K</span>
+              <span>{{ stretchData.best.bb }}BB</span>
+              <span>{{ stretchData.best.er }}ER</span>
+              <span>{{ stretchData.best.ip_display }}IP</span>
+            </div>
+          } @else {
+            <div class="card-counts">
+              <span>{{ stretchData.best.hits }}H</span>
+              <span>{{ stretchData.best.hr }}HR</span>
+              <span>{{ stretchData.best.rbi }}RBI</span>
+              <span>{{ stretchData.best.sb }}SB</span>
+            </div>
+          }
+        </div>
+
+        <div class="summary-card worst-card">
+          <div class="card-label worst-label">Worst Stretch</div>
+          <div class="card-value">{{ stretchData.worst.value_display }}</div>
+          <div class="card-range">Games {{ stretchData.worst.start_game }}–{{ stretchData.worst.end_game }}</div>
+          <div class="card-dates">{{ stretchData.worst.start_date }} → {{ stretchData.worst.end_date }}</div>
+          @if (isPitchingStat(stretchData.stat)) {
+            <div class="card-counts">
+              <span>{{ stretchData.worst.k }}K</span>
+              <span>{{ stretchData.worst.bb }}BB</span>
+              <span>{{ stretchData.worst.er }}ER</span>
+              <span>{{ stretchData.worst.ip_display }}IP</span>
+            </div>
+          } @else {
+            <div class="card-counts">
+              <span>{{ stretchData.worst.hits }}H</span>
+              <span>{{ stretchData.worst.hr }}HR</span>
+              <span>{{ stretchData.worst.rbi }}RBI</span>
+              <span>{{ stretchData.worst.sb }}SB</span>
+            </div>
+          }
+        </div>
+
+        <div class="summary-card season-card">
+          <div class="card-label">{{ stretchData.season }} Season</div>
+          <div class="card-value accent">{{ stretchData.season_value_display }}</div>
+          <div class="card-stat-name">{{ seasonStatLabel(stretchData) }}</div>
+          <div class="card-sub">{{ stretchData.total_games }} games played</div>
+        </div>
+
+        <div class="summary-card streak-card">
+          <div class="card-label">Consistency</div>
+          <div [class]="'card-value ' + streakClass(stretchData)">{{ streakLabel(stretchData) }}</div>
+          <div class="card-sub">{{ stretchData.streakiness }}% variation</div>
+          <div class="streak-bar-track">
+            <div [class]="'streak-bar-fill ' + streakClass(stretchData)"
+                 [style.width.%]="Math.min(stretchData.streakiness, 100)"></div>
+          </div>
+        </div>
+      </div>
+    } @else {
+      <!-- Comparison summary -->
+      <div class="compare-summary">
+        @for (item of [
+          { data: stretchData, info: playerInfo, color: '#10b981' },
+          { data: compareStretchData, info: compareInfo, color: '#3b82f6' }
+        ]; track item.color) {
+          @if (item.data) {
+            <div class="compare-col">
+              <div class="compare-col-header" [style.border-color]="item.color">
+                <span class="col-dot" [style.background]="item.color"></span>
+                {{ item.info?.name ?? '…' }}
+              </div>
+
+              <div class="summary-card best-card">
+                <div class="card-label best-label">Best Stretch</div>
+                <div class="card-value">{{ item.data.best.value_display }}</div>
+                <div class="card-range">Games {{ item.data.best.start_game }}–{{ item.data.best.end_game }}</div>
+                <div class="card-dates">{{ item.data.best.start_date }} → {{ item.data.best.end_date }}</div>
+                @if (isPitchingStat(item.data.stat)) {
+                  <div class="card-counts">
+                    <span>{{ item.data.best.k }}K</span>
+                    <span>{{ item.data.best.bb }}BB</span>
+                    <span>{{ item.data.best.er }}ER</span>
+                    <span>{{ item.data.best.ip_display }}IP</span>
+                  </div>
+                } @else {
+                  <div class="card-counts">
+                    <span>{{ item.data.best.hits }}H</span>
+                    <span>{{ item.data.best.hr }}HR</span>
+                    <span>{{ item.data.best.rbi }}RBI</span>
+                    <span>{{ item.data.best.sb }}SB</span>
+                  </div>
+                }
+              </div>
+
+              <div class="summary-card worst-card">
+                <div class="card-label worst-label">Worst Stretch</div>
+                <div class="card-value">{{ item.data.worst.value_display }}</div>
+                <div class="card-range">Games {{ item.data.worst.start_game }}–{{ item.data.worst.end_game }}</div>
+                <div class="card-dates">{{ item.data.worst.start_date }} → {{ item.data.worst.end_date }}</div>
+                @if (isPitchingStat(item.data.stat)) {
+                  <div class="card-counts">
+                    <span>{{ item.data.worst.k }}K</span>
+                    <span>{{ item.data.worst.bb }}BB</span>
+                    <span>{{ item.data.worst.er }}ER</span>
+                    <span>{{ item.data.worst.ip_display }}IP</span>
+                  </div>
+                } @else {
+                  <div class="card-counts">
+                    <span>{{ item.data.worst.hits }}H</span>
+                    <span>{{ item.data.worst.hr }}HR</span>
+                    <span>{{ item.data.worst.rbi }}RBI</span>
+                    <span>{{ item.data.worst.sb }}SB</span>
+                  </div>
+                }
+              </div>
+
+              <div class="summary-card season-card">
+                <div class="card-label">{{ item.data.season }} Season</div>
+                <div class="card-value" [style.color]="item.color">{{ item.data.season_value_display }}</div>
+                <div class="card-stat-name">{{ seasonStatLabel(item.data) }}</div>
+                <div class="card-sub">{{ item.data.total_games }} games</div>
+              </div>
+
+              <div class="summary-card streak-card">
+                <div class="card-label">Consistency</div>
+                <div [class]="'card-value ' + streakClass(item.data)">{{ streakLabel(item.data) }}</div>
+                <div class="card-sub">{{ item.data.streakiness }}% variation</div>
+                <div class="streak-bar-track">
+                  <div [class]="'streak-bar-fill ' + streakClass(item.data)"
+                       [style.width.%]="Math.min(item.data.streakiness, 100)"></div>
+                </div>
+              </div>
+            </div>
+          }
+        }
+      </div>
+    }
+  }
+
+</div>
