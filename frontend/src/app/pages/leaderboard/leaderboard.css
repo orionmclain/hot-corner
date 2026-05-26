@@ -51,7 +51,7 @@
   align-items: flex-end;
   gap: 20px;
   padding: 16px 24px;
-  background: rgba(13, 17, 23, 0.92);
+  background: var(--bg-primary-glass);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   flex-wrap: wrap;
@@ -157,7 +157,7 @@
 .lb-row:hover td { background: var(--bg-card-hover); }
 .lb-row td {
   padding: 12px 16px;
-  border-bottom: 1px solid rgba(255,255,255,0.03);
+  border-bottom: 1px solid var(--bg-overlay);
   color: var(--text-secondary);
   vertical-align: middle;
 }
@@ -168,16 +168,16 @@
 .val-cell  { text-align: center; font-weight: 700; color: var(--text-primary); font-size: 15px; }
 .val-cell.season-val  { color: var(--text-secondary); font-size: 14px; font-weight: 500; }
 .val-cell.season-total { color: var(--text-muted); font-size: 13px; font-weight: 500; }
-.val-cell.best-val    { color: #10b981; font-size: 14px; }
+.val-cell.best-val    { color: var(--accent); font-size: 14px; }
 .val-cell.worst-val   { color: var(--text-muted); font-size: 14px; font-weight: 500; }
 
 .stretch-val-cell {
   text-align: center;
   vertical-align: middle;
 }
-.stretch-val-cell .best-val  { display: block; font-weight: 700; font-size: 14px; color: #10b981; }
+.stretch-val-cell .best-val  { display: block; font-weight: 700; font-size: 14px; color: var(--accent); }
 .stretch-val-cell .worst-val { display: block; font-weight: 700; font-size: 14px; color: var(--text-muted); }
-.stretch-val-cell.sorted { background: rgba(255,255,255,0.04); }
+.stretch-val-cell.sorted { background: var(--bg-overlay-md); }
 .stretch-dates {
   display: block;
   font-size: 10px;
@@ -186,7 +186,7 @@
   white-space: nowrap;
   opacity: 0.7;
 }
-.val-cell.sorted      { background: rgba(255,255,255,0.04); }
+.val-cell.sorted      { background: var(--bg-overlay-md); }
 
 .hc-dot {
   width: 8px;
@@ -194,17 +194,17 @@
   border-radius: 50%;
   flex-shrink: 0;
 }
-.hc-dot.on-fire  { background: #ef4444; }
-.hc-dot.hot      { background: #fb923c; }
-.hc-dot.cold     { background: #60a5fa; }
-.hc-dot.slumping { background: #93c5fd; }
+.hc-dot.on-fire  { background: var(--on-fire); }
+.hc-dot.hot      { background: var(--hot); }
+.hc-dot.cold     { background: var(--cold); }
+.hc-dot.slumping { background: var(--slumping); }
 .hc-dot.neutral  { background: var(--border); }
 
 .consistency-cell {
   text-align: center;
   vertical-align: middle;
   padding: 12px 16px;
-  border-bottom: 1px solid rgba(255,255,255,0.03);
+  border-bottom: 1px solid var(--bg-overlay);
 }
 .cv-bar-track {
   height: 4px;
@@ -272,9 +272,9 @@
   background: var(--bg-card);
   color: var(--text-muted);
 }
-.rank-badge.rank-1 { background: rgba(251,191,36,0.2); color: #fbbf24; }
-.rank-badge.rank-2 { background: rgba(156,163,175,0.2); color: #9ca3af; }
-.rank-badge.rank-3 { background: rgba(180,120,60,0.2);  color: #b4783c; }
+.rank-badge.rank-1 { background: var(--rank-1-dim); color: var(--rank-1); }
+.rank-badge.rank-2 { background: var(--rank-2-dim); color: var(--rank-2); }
+.rank-badge.rank-3 { background: var(--rank-3-dim); color: var(--rank-3); }
 
 .player-cell { vertical-align: middle; }
 .player-cell-inner {
@@ -306,10 +306,10 @@
   padding: 3px 9px;
   border-radius: 999px;
 }
-.hc-pill.on-fire  { background: rgba(239,68,68,0.15);   color: #ef4444; border: 1px solid rgba(239,68,68,0.25); }
-.hc-pill.hot      { background: rgba(251,146,60,0.15);  color: #fb923c; border: 1px solid rgba(251,146,60,0.25); }
-.hc-pill.cold     { background: rgba(96,165,250,0.15);  color: #60a5fa; border: 1px solid rgba(96,165,250,0.25); }
-.hc-pill.slumping { background: rgba(147,197,253,0.12); color: #93c5fd; border: 1px solid rgba(147,197,253,0.2); }
+.hc-pill.on-fire  { background: var(--on-fire-dim);   color: var(--on-fire);  border: 1px solid var(--on-fire-border); }
+.hc-pill.hot      { background: var(--hot-dim);       color: var(--hot);      border: 1px solid var(--hot-border); }
+.hc-pill.cold     { background: var(--cold-dim);      color: var(--cold);     border: 1px solid var(--cold-border); }
+.hc-pill.slumping { background: var(--slumping-dim);  color: var(--slumping); border: 1px solid var(--slumping-border); }
 .hc-pill.neutral  { background: var(--bg-card); color: var(--text-muted); border: 1px solid var(--border); }
 
 .spin { animation: spin 0.8s linear infinite; }
@@ -329,8 +329,8 @@
   color: var(--text-muted);
   letter-spacing: 0.2px;
 }
-.form-delta.positive { color: #10b981; }
-.form-delta.negative { color: #ef4444; }
+.form-delta.positive { color: var(--accent); }
+.form-delta.negative { color: var(--on-fire); }
 
 .search-input {
   background: var(--bg-card);

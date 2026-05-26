@@ -1,6 +1,6 @@
-# Baseball Stretch Analysis
+# Hot Corner
 
-Explore MLB player and team performance through rolling N-game windows. See who's hot, who's cold, and how consistent any hitter or pitcher has been over any stretch of the season.
+See who's hot, who's cold, and how consistent any MLB player has really been. Explore the season through any rolling N-game window — find hot streaks, cold spells, and leaderboards updated daily.
 
 ![Angular](https://img.shields.io/badge/Angular-20-dd0031?style=flat-square) ![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688?style=flat-square) ![Python](https://img.shields.io/badge/Python-3.12+-3776ab?style=flat-square) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-optional-336791?style=flat-square)
 
@@ -19,7 +19,7 @@ Explore MLB player and team performance through rolling N-game windows. See who'
 ## Project Structure
 
 ```
-Baseball Stretch Analysis/
+Hot Corner/
 ├── frontend/               # Angular 20 frontend
 ├── backend/
 │   ├── main.py             # FastAPI app

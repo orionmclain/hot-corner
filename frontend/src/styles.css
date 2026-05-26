@@ -1,21 +1,58 @@
 :root {
+  /* ── Backgrounds ───────────────────────────────────────────────────────────── */
   --bg-primary: #0d1117;
   --bg-secondary: #161b22;
   --bg-card: #1f2937;
   --bg-card-hover: #263141;
-  --accent: #10b981;
-  --accent-dim: rgba(16, 185, 129, 0.15);
-  --accent-hover: #059669;
+  --bg-primary-glass: rgba(13, 17, 23, 0.92);
+  --bg-secondary-glass: rgba(22, 27, 34, 0.75);
+  --bg-overlay: rgba(255, 255, 255, 0.03);
+  --bg-overlay-md: rgba(255, 255, 255, 0.04);
+
+  /* ── Accent ────────────────────────────────────────────────────────────────── */
+  --accent: #f97316;
+  --accent-dim: rgba(249, 115, 22, 0.15);
+  --accent-hover: #ea580c;
+
+  /* ── Text ──────────────────────────────────────────────────────────────────── */
   --text-primary: #f9fafb;
   --text-secondary: #9ca3af;
   --text-muted: #6b7280;
+
+  /* ── Borders ───────────────────────────────────────────────────────────────── */
   --border: #2d3748;
   --border-light: #374151;
+
+  /* ── Semantic colors ───────────────────────────────────────────────────────── */
   --red: #ef4444;
   --red-dim: rgba(239, 68, 68, 0.15);
   --gold: #f59e0b;
   --gold-dim: rgba(245, 158, 11, 0.15);
   --blue: #3b82f6;
+
+  /* ── Hot/cold status ───────────────────────────────────────────────────────── */
+  --on-fire: #ef4444;
+  --on-fire-dim: rgba(239, 68, 68, 0.15);
+  --on-fire-border: rgba(239, 68, 68, 0.25);
+  --hot: #fb923c;
+  --hot-dim: rgba(251, 146, 60, 0.15);
+  --hot-border: rgba(251, 146, 60, 0.25);
+  --cold: #60a5fa;
+  --cold-dim: rgba(96, 165, 250, 0.15);
+  --cold-border: rgba(96, 165, 250, 0.25);
+  --slumping: #93c5fd;
+  --slumping-dim: rgba(147, 197, 253, 0.12);
+  --slumping-border: rgba(147, 197, 253, 0.2);
+
+  /* ── Rank colors ───────────────────────────────────────────────────────────── */
+  --rank-1: #fbbf24;
+  --rank-1-dim: rgba(251, 191, 36, 0.2);
+  --rank-2: #9ca3af;
+  --rank-2-dim: rgba(156, 163, 175, 0.2);
+  --rank-3: #b4783c;
+  --rank-3-dim: rgba(180, 120, 60, 0.2);
+
+  /* ── Shape & depth ─────────────────────────────────────────────────────────── */
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 16px;

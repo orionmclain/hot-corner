@@ -139,10 +139,10 @@
   border-radius: 999px;
   margin-top: 2px;
 }
-.hc-pill.on-fire  { background: rgba(239,68,68,0.15);   color: #ef4444; border: 1px solid rgba(239,68,68,0.25); }
-.hc-pill.hot      { background: rgba(251,146,60,0.15);  color: #fb923c; border: 1px solid rgba(251,146,60,0.25); }
-.hc-pill.cold     { background: rgba(96,165,250,0.15);  color: #60a5fa; border: 1px solid rgba(96,165,250,0.25); }
-.hc-pill.slumping { background: rgba(147,197,253,0.12); color: #93c5fd; border: 1px solid rgba(147,197,253,0.2); }
+.hc-pill.on-fire  { background: var(--on-fire-dim);  color: var(--on-fire);  border: 1px solid var(--on-fire-border); }
+.hc-pill.hot      { background: var(--hot-dim);      color: var(--hot);      border: 1px solid var(--hot-border); }
+.hc-pill.cold     { background: var(--cold-dim);     color: var(--cold);     border: 1px solid var(--cold-border); }
+.hc-pill.slumping { background: var(--slumping-dim); color: var(--slumping); border: 1px solid var(--slumping-border); }
 .hc-pill.neutral  { background: var(--bg-card); color: var(--text-muted); border: 1px solid var(--border); }
 
 .page-error {

@@ -1,11 +1,12 @@
 <header>
   <a routerLink="/" class="logo">
     <span class="logo-icon">⚾</span>
-    <span class="logo-text">Stretch<span class="logo-accent">Analysis</span></span>
+    <span class="logo-text"><span class="logo-accent">Hot</span>Corner</span>
   </a>
 
   <nav class="header-nav">
     <a routerLink="/leaderboard" class="nav-link">Leaderboard</a>
+    <button class="nav-link" (click)="goToTeams()">Teams</button>
   </nav>
 
   @if (showSearch) {

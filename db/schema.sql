@@ -1,4 +1,4 @@
--- Baseball Stretch Analysis — PostgreSQL schema
+-- Hot Corner — PostgreSQL schema
 -- Apply with: psql $DATABASE_URL -f db/schema.sql
 
 CREATE TABLE IF NOT EXISTS players (

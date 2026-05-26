@@ -1,11 +1,10 @@
 <div class="home-page">
+
+  <!-- ── Hero ── -->
   <div class="hero">
     <div class="hero-badge">MLB Analytics</div>
-    <h1 class="hero-title">Baseball Stretch<br><span class="hero-accent">Analysis</span></h1>
-    <p class="hero-sub">
-      Explore any player's season through a rolling-window lens.
-      Find hot streaks, cold spells, and how consistent they really were.
-    </p>
+    <h1 class="hero-title"><span class="hero-accent">Hot</span>Corner</h1>
+    <p class="hero-sub">Baseball is streaky. We track it.</p>
 
     <div class="search-wrapper">
       <app-search-bar
@@ -19,45 +18,131 @@
       <span class="hint">Try:</span>
       <button class="hint-chip" (click)="triggerHint('Shohei Ohtani')">Shohei Ohtani</button>
       <button class="hint-chip" (click)="triggerHint('Aaron Judge')">Aaron Judge</button>
-      <button class="hint-chip" (click)="triggerHint('Tarik Skubal')">Tarik Skubal</button>
+      <button class="hint-chip" (click)="triggerHint('Paul Skenes')">Paul Skenes</button>
     </div>
   </div>
 
-  <div class="features">
-    <div class="feature-card">
-      <div class="feature-icon">📈</div>
-      <h3>Rolling Stretch Chart</h3>
-      <p>Visualize performance across every N-game window of a season.</p>
+  <!-- ── Preview panels ── -->
+  <div class="preview-section">
+
+    <div class="preview-controls">
+      <span class="stretch-label">Last</span>
+      <input
+        class="range-input"
+        type="range" min="3" max="20" step="1"
+        [(ngModel)]="stretchLength"
+        (change)="loadPreviews()"
+      />
+      <span class="stretch-value">{{ stretchLength }} games</span>
     </div>
-    <div class="feature-card">
-      <div class="feature-icon">🔥</div>
-      <h3>Hot & Cold Streaks</h3>
-      <p>Instantly spot the best and worst stretches with highlighted markers.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">📊</div>
-      <h3>Consistency Score</h3>
-      <p>Quantify how streaky vs. consistent a player is over the full year.</p>
+
+    <div class="panels-grid">
+
+      <!-- Top Hitters OPS -->
+      <div class="preview-panel">
+        <button class="panel-header" (click)="goToLeaderboard('ops', 'players')">
+          <span class="panel-title">Top Hitters <span class="panel-stat">OPS</span></span>
+          <span class="panel-view-all">View all →</span>
+        </button>
+        <div class="panel-body">
+          @if (loading) {
+            <div class="panel-loading"><svg class="spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg></div>
+          } @else {
+            @for (p of topHitters; track p.player_id; let i = $index) {
+              <a class="preview-row" [routerLink]="['/player', p.player_id]">
+                <span class="preview-rank">{{ i + 1 }}</span>
+                <img class="preview-thumb" [src]="p.headshot" [alt]="p.name" />
+                <span class="preview-info">
+                  <span class="preview-name">{{ p.name }}</span>
+                  <span class="preview-meta">{{ p.team_abbreviation }} · {{ p.position }}</span>
+                </span>
+                <span class="preview-stat">{{ p.current_value_display }}</span>
+                <span [class]="hcClass(p.hot_cold)"></span>
+              </a>
+            }
+          }
+        </div>
+      </div>
+
+      <!-- Top Pitchers ERA -->
+      <div class="preview-panel">
+        <button class="panel-header" (click)="goToLeaderboard('era', 'players', 'sp')">
+          <span class="panel-title">Top Starters <span class="panel-stat">ERA</span></span>
+          <span class="panel-view-all">View all →</span>
+        </button>
+        <div class="panel-body">
+          @if (loading) {
+            <div class="panel-loading"><svg class="spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg></div>
+          } @else {
+            @for (p of topPitchers; track p.player_id; let i = $index) {
+              <a class="preview-row" [routerLink]="['/player', p.player_id]">
+                <span class="preview-rank">{{ i + 1 }}</span>
+                <img class="preview-thumb" [src]="p.headshot" [alt]="p.name" />
+                <span class="preview-info">
+                  <span class="preview-name">{{ p.name }}</span>
+                  <span class="preview-meta">{{ p.team_abbreviation }} · {{ p.position }}</span>
+                </span>
+                <span class="preview-stat">{{ p.current_value_display }}</span>
+                <span [class]="hcClass(p.hot_cold)"></span>
+              </a>
+            }
+          }
+        </div>
+      </div>
+
+      <!-- Top Teams OPS -->
+      <div class="preview-panel">
+        <button class="panel-header" (click)="goToLeaderboard('ops', 'teams')">
+          <span class="panel-title">Top Teams <span class="panel-stat">OPS</span></span>
+          <span class="panel-view-all">View all →</span>
+        </button>
+        <div class="panel-body">
+          @if (loading) {
+            <div class="panel-loading"><svg class="spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg></div>
+          } @else {
+            @for (t of topTeamsOps; track t.team_id; let i = $index) {
+              <a class="preview-row" [routerLink]="['/team', t.team_id]">
+                <span class="preview-rank">{{ i + 1 }}</span>
+                <img class="preview-thumb team-logo" [src]="t.logo_url" [alt]="t.abbreviation" />
+                <span class="preview-info">
+                  <span class="preview-name">{{ t.name }}</span>
+                  <span class="preview-meta">{{ t.abbreviation }}</span>
+                </span>
+                <span class="preview-stat">{{ t.current_value_display }}</span>
+                <span [class]="hcClass(t.hot_cold)"></span>
+              </a>
+            }
+          }
+        </div>
+      </div>
+
+      <!-- Top Teams ERA -->
+      <div class="preview-panel">
+        <button class="panel-header" (click)="goToLeaderboard('era', 'teams')">
+          <span class="panel-title">Top Teams <span class="panel-stat">ERA</span></span>
+          <span class="panel-view-all">View all →</span>
+        </button>
+        <div class="panel-body">
+          @if (loading) {
+            <div class="panel-loading"><svg class="spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg></div>
+          } @else {
+            @for (t of topTeamsEra; track t.team_id; let i = $index) {
+              <a class="preview-row" [routerLink]="['/team', t.team_id]">
+                <span class="preview-rank">{{ i + 1 }}</span>
+                <img class="preview-thumb team-logo" [src]="t.logo_url" [alt]="t.abbreviation" />
+                <span class="preview-info">
+                  <span class="preview-name">{{ t.name }}</span>
+                  <span class="preview-meta">{{ t.abbreviation }}</span>
+                </span>
+                <span class="preview-stat">{{ t.current_value_display }}</span>
+                <span [class]="hcClass(t.hot_cold)"></span>
+              </a>
+            }
+          }
+        </div>
+      </div>
+
     </div>
   </div>
 
-  <!-- ── Browse Teams ── -->
-  @if (teams.length) {
-    <div class="teams-section">
-      <div class="teams-header">
-        <h2 class="teams-title">Browse by Team</h2>
-        <a routerLink="/leaderboard" class="leaderboard-link">
-          View Leaderboard →
-        </a>
-      </div>
-      <div class="teams-grid">
-        @for (team of teams; track team.id) {
-          <a class="team-chip" [routerLink]="['/team', team.id]" [title]="team.name">
-            <img class="team-chip-logo" [src]="team.logo_url" [alt]="team.abbreviation" />
-            <span class="team-chip-abbr">{{ team.abbreviation }}</span>
-          </a>
-        }
-      </div>
-    </div>
-  }
 </div>

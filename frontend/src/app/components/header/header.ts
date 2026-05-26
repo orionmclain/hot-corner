@@ -2,7 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { Router, RouterLink, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { SearchBar } from '../search-bar/search-bar';
-import { PlayerSearchResult } from '../../core/services/stats.service';
+import { PlayerSearchResult, StatsService } from '../../core/services/stats.service';
 
 @Component({
   selector: 'app-header',
@@ -12,6 +12,7 @@ import { PlayerSearchResult } from '../../core/services/stats.service';
 })
 export class Header implements OnInit {
   private router = inject(Router);
+  private statsService = inject(StatsService);
 
   showSearch = false;
 
@@ -31,5 +32,11 @@ export class Header implements OnInit {
 
   onSelectPlayer(player: PlayerSearchResult) {
     this.router.navigate(['/player', player.id]);
+  }
+
+  goToTeams() {
+    this.statsService.leaderboardPageState.view = 'teams';
+    this.statsService.leaderboardPageState.teamData = null;
+    this.router.navigate(['/leaderboard']);
   }
 }

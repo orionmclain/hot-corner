@@ -49,7 +49,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Baseball Stretch Analysis API", lifespan=lifespan)
+app = FastAPI(title="Hot Corner API", lifespan=lifespan)
 app.add_middleware(GZipMiddleware, minimum_size=500)
 
 app.add_middleware(
@@ -404,6 +404,20 @@ def compute_season_value(games: list, stat: str, length: int, compute_fn) -> tup
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
+
+@app.get("/health")
+def health():
+    status = {"status": "ok", "db": "unavailable"}
+    try:
+        import database
+        with database._get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1")
+        status["db"] = "ok"
+    except Exception:
+        status["status"] = "degraded"
+    return status
+
 
 @app.get("/players/search")
 def search_players(q: str = Query(..., min_length=2)):

@@ -73,10 +73,10 @@
   border-radius: 999px;
   letter-spacing: 0.3px;
 }
-.hc-badge.on-fire  { background: rgba(239,68,68,0.15);   color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
-.hc-badge.hot      { background: rgba(251,146,60,0.15);  color: #fb923c; border: 1px solid rgba(251,146,60,0.3); }
-.hc-badge.cold     { background: rgba(96,165,250,0.15);  color: #60a5fa; border: 1px solid rgba(96,165,250,0.3); }
-.hc-badge.slumping { background: rgba(147,197,253,0.12); color: #93c5fd; border: 1px solid rgba(147,197,253,0.2); }
+.hc-badge.on-fire  { background: var(--on-fire-dim);  color: var(--on-fire);  border: 1px solid var(--on-fire-border); }
+.hc-badge.hot      { background: var(--hot-dim);      color: var(--hot);      border: 1px solid var(--hot-border); }
+.hc-badge.cold     { background: var(--cold-dim);     color: var(--cold);     border: 1px solid var(--cold-border); }
+.hc-badge.slumping { background: var(--slumping-dim); color: var(--slumping); border: 1px solid var(--slumping-border); }
 
 .player-name {
   font-size: 26px;
@@ -272,11 +272,11 @@
   background: var(--accent);
   border: 2px solid var(--bg-primary);
   cursor: pointer;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 0 0 3px var(--accent-dim);
   transition: box-shadow 120ms;
 }
 .range-input::-webkit-slider-thumb:hover {
-  box-shadow: 0 0 0 5px rgba(16, 185, 129, 0.25);
+  box-shadow: 0 0 0 5px var(--accent-dim);
 }
 
 /* ── Chart ──────────────────────────────────────── */
@@ -332,8 +332,8 @@
 }
 
 .dot { width: 10px; height: 10px; border-radius: 50%; }
-.dot.gold { background: #f59e0b; }
-.dot.red  { background: #ef4444; }
+.dot.gold { background: var(--gold); }
+.dot.red  { background: var(--on-fire); }
 .line-dash { width: 20px; height: 2px; border-top: 2px dashed rgba(255,255,255,0.25); }
 
 .chart-wrapper {
@@ -348,7 +348,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(22, 27, 34, 0.75);
+  background: var(--bg-secondary-glass);
   z-index: 10;
 }
 
@@ -402,8 +402,8 @@ canvas { transition: opacity 200ms; }
   color: var(--text-muted);
 }
 
-.best-label  { color: #f59e0b; }
-.worst-label { color: #ef4444; }
+.best-label  { color: var(--gold); }
+.worst-label { color: var(--on-fire); }
 
 .card-value {
   font-size: 30px;
@@ -437,7 +437,7 @@ canvas { transition: opacity 200ms; }
 }
 
 .consistent { color: var(--accent); }
-.moderate   { color: #f59e0b; }
+.moderate   { color: var(--gold); }
 .streaky    { color: var(--red); }
 
 .streak-bar-track {
@@ -454,11 +454,11 @@ canvas { transition: opacity 200ms; }
   transition: width 600ms ease;
 }
 .streak-bar-fill.consistent { background: var(--accent); }
-.streak-bar-fill.moderate   { background: #f59e0b; }
+.streak-bar-fill.moderate   { background: var(--gold); }
 .streak-bar-fill.streaky    { background: var(--red); }
 
-.best-card  { border-top: 2px solid #f59e0b; }
-.worst-card { border-top: 2px solid #ef4444; }
+.best-card  { border-top: 2px solid var(--gold); }
+.worst-card { border-top: 2px solid var(--on-fire); }
 
 /* ── Comparison summary ─────────────────────────── */
 .compare-summary {
@@ -582,7 +582,7 @@ canvas { transition: opacity 200ms; }
 .game-log-table td {
   padding: 9px 14px;
   color: var(--text-secondary);
-  border-bottom: 1px solid rgba(255,255,255,0.03);
+  border-bottom: 1px solid var(--bg-overlay);
   white-space: nowrap;
 }
 
