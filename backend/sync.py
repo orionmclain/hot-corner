@@ -5,7 +5,8 @@ sync.py — ETL: fetch MLB game logs from the Stats API and upsert into PostgreS
 Run nightly (or on demand) to keep the local DB current.
 
 Usage:
-    python sync.py                              # current season
+    python sync.py                              # current season (all players)
+    python sync.py --lookback 7                # re-sync players active in last 7 days
     python sync.py --seasons 2025 2024 2023    # backfill multiple seasons
     python sync.py --players 660271 545361     # one or more specific players
     python sync.py --workers 20                # increase parallelism
@@ -16,7 +17,7 @@ import logging
 import os
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import psycopg2
@@ -247,6 +248,21 @@ def upsert_roster(conn, team_id: int, season: int, roster: list[dict]):
     conn.commit()
 
 
+# ── Lookback helpers ──────────────────────────────────────────────────────────
+
+def fetch_recent_player_ids(conn, days: int, season: int) -> set[int]:
+    cutoff = (datetime.now() - timedelta(days=days)).date()
+    with conn.cursor() as cur:
+        cur.execute("""
+            SELECT DISTINCT player_id FROM hitting_game_logs
+            WHERE season = %s AND game_date >= %s
+            UNION
+            SELECT DISTINCT player_id FROM pitching_game_logs
+            WHERE season = %s AND game_date >= %s
+        """, (season, cutoff, season, cutoff))
+        return {row[0] for row in cur.fetchall()}
+
+
 # ── Per-player game log sync ───────────────────────────────────────────────────
 
 def sync_player(player: dict, season: int) -> tuple[int, str, str]:
@@ -314,7 +330,7 @@ def sync_teams_and_rosters(season: int):
 
 # ── Main sync loop ─────────────────────────────────────────────────────────────
 
-def run_sync(seasons: list[int], player_ids: list[int] | None = None, workers: int = 12):
+def run_sync(seasons: list[int], player_ids: list[int] | None = None, workers: int = 12, lookback: int | None = None):
     for season in seasons:
         log.info(f"── Season {season} ──────────────────────────────────")
 
@@ -326,6 +342,14 @@ def run_sync(seasons: list[int], player_ids: list[int] | None = None, workers: i
         if player_ids:
             pid_set = set(player_ids)
             all_players = [p for p in all_players if p["id"] in pid_set]
+        elif lookback:
+            conn = get_conn()
+            try:
+                recent_ids = fetch_recent_player_ids(conn, lookback, season)
+            finally:
+                conn.close()
+            all_players = [p for p in all_players if p["id"] in recent_ids]
+            log.info(f"  Lookback {lookback}d: {len(all_players)} players active in last {lookback} days")
 
         total = len(all_players)
         log.info(f"  {total} players to sync (workers={workers})")
@@ -356,5 +380,7 @@ if __name__ == "__main__":
     parser.add_argument("--seasons", type=int, nargs="+", default=[CURRENT_YEAR])
     parser.add_argument("--players", type=int, nargs="+")
     parser.add_argument("--workers", type=int, default=12)
+    parser.add_argument("--lookback", type=int, default=None,
+                        help="Only re-sync players with games in the last N days")
     args = parser.parse_args()
-    run_sync(args.seasons, args.players, args.workers)
+    run_sync(args.seasons, args.players, args.workers, args.lookback)
