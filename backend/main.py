@@ -72,10 +72,12 @@ PITCHING_STAT_LABELS = {
     "k": "K", "bb": "BB", "er": "ER",
 }
 ALL_STAT_LABELS = {**HITTING_STAT_LABELS, **PITCHING_STAT_LABELS}
+TEAM_STAT_LABELS = {**ALL_STAT_LABELS, "wins": "W"}
 LOWER_IS_BETTER = {"era", "whip", "bb", "er"}
 HITTING_COUNT_STATS = {"hr", "rbi", "sb"}
 PITCHING_COUNT_STATS = {"k", "bb", "er"}
 ALL_COUNT_STATS = HITTING_COUNT_STATS | PITCHING_COUNT_STATS
+TEAM_COUNT_STATS = ALL_COUNT_STATS | {"wins"}
 
 # MLB API sort stat names for leaderboard fetching
 LEADERBOARD_CONFIG = {
@@ -102,6 +104,7 @@ _teams_cache: TTLCache = TTLCache(maxsize=5, ttl=86400)
 _roster_cache: TTLCache = TTLCache(maxsize=60, ttl=3600)
 _leaderboard_cache: TTLCache = TTLCache(maxsize=50, ttl=3600)
 _team_gamelog_cache: TTLCache = TTLCache(maxsize=60, ttl=3600)
+_team_wins_cache: TTLCache = TTLCache(maxsize=60, ttl=3600)
 _lock = Lock()
 
 
@@ -249,6 +252,42 @@ def _cached_team_gamelog(team_id: int, season: int, group: str) -> list[dict]:
     return games
 
 
+def _cached_team_wins(team_id: int, season: int) -> list[dict]:
+    """Returns one dict per completed game with a wins field (1=win, 0=loss)."""
+    key = (team_id, season)
+    with _lock:
+        if key in _team_wins_cache:
+            return _team_wins_cache[key]
+    r = requests.get(
+        f"{MLB_API_BASE}/schedule",
+        params={"sportId": 1, "teamId": team_id, "season": season, "gameType": "R"},
+        timeout=15,
+    )
+    if r.status_code != 200:
+        raise HTTPException(status_code=502, detail="Failed to fetch team schedule")
+    games = []
+    for date_entry in sorted(r.json().get("dates", []), key=lambda d: d["date"]):
+        for game in date_entry.get("games", []):
+            if game.get("status", {}).get("abstractGameState") != "Final":
+                continue
+            home = game["teams"]["home"]
+            away = game["teams"]["away"]
+            is_home = home["team"]["id"] == team_id
+            team_score = home.get("score", 0) if is_home else away.get("score", 0)
+            opp_score  = away.get("score", 0) if is_home else home.get("score", 0)
+            games.append({
+                "date": date_entry["date"],
+                "wins": 1 if team_score > opp_score else 0,
+                # Dummy hitting fields required by build_prefix_sums
+                "atBats": 0, "hits": 0, "baseOnBalls": 0, "hitByPitch": 0,
+                "sacFlies": 0, "totalBases": 0, "homeRuns": 0, "rbi": 0,
+                "stolenBases": 0, "strikeOuts": 0,
+            })
+    with _lock:
+        _team_wins_cache[key] = games
+    return games
+
+
 # ── Game parsing ──────────────────────────────────────────────────────────────
 
 def parse_ip(ip_str) -> float:
@@ -281,6 +320,7 @@ def parse_hitting_game(s: dict) -> dict:
         "strikeOuts": st.get("strikeOuts", 0),
         "runs": st.get("runs", 0),
         "plateAppearances": st.get("plateAppearances", 0),
+        "wins": st.get("wins", 0),
     }
 
 
@@ -307,13 +347,13 @@ def parse_pitching_game(s: dict) -> dict:
 
 def compute_stat(games: list[dict], stat: str) -> float:
     """Full-season (or arbitrary slice) stat computation. Single-pass over games."""
-    ab = h = bb = hbp = sf = tb = hr = rbi = sb = 0
+    ab = h = bb = hbp = sf = tb = hr = rbi = sb = wins = 0
     for g in games:
-        ab  += g["atBats"];      h   += g["hits"]
-        bb  += g["baseOnBalls"]; hbp += g["hitByPitch"]
-        sf  += g["sacFlies"];    tb  += g["totalBases"]
-        hr  += g["homeRuns"];    rbi += g["rbi"]
-        sb  += g["stolenBases"]
+        ab  += g["atBats"];      h    += g["hits"]
+        bb  += g["baseOnBalls"]; hbp  += g["hitByPitch"]
+        sf  += g["sacFlies"];    tb   += g["totalBases"]
+        hr  += g["homeRuns"];    rbi  += g["rbi"]
+        sb  += g["stolenBases"]; wins += g.get("wins", 0)
     d = ab + bb + hbp + sf
     if stat == "avg":  return round(h / ab, 3) if ab > 0 else 0.0
     if stat == "obp":  return round((h + bb + hbp) / d, 3) if d > 0 else 0.0
@@ -322,6 +362,7 @@ def compute_stat(games: list[dict], stat: str) -> float:
     if stat == "hr":   return float(hr)
     if stat == "rbi":  return float(rbi)
     if stat == "sb":   return float(sb)
+    if stat == "wins": return float(wins)
     return 0.0
 
 
@@ -357,7 +398,8 @@ def build_prefix_sums(games: list[dict], is_pitching: bool) -> dict:
     else:
         keys = {"ab": "atBats", "h": "hits", "bb": "baseOnBalls",
                 "hbp": "hitByPitch", "sf": "sacFlies", "tb": "totalBases",
-                "hr": "homeRuns", "rbi": "rbi", "sb": "stolenBases", "k": "strikeOuts"}
+                "hr": "homeRuns", "rbi": "rbi", "sb": "stolenBases", "k": "strikeOuts",
+                "wins": "wins"}
         p = {k: [0] * (n + 1) for k in keys}
         for i, g in enumerate(games, 1):
             for k, field in keys.items():
@@ -391,9 +433,10 @@ def window_value(p: dict, i: int, j: int, stat: str, is_pitching: bool) -> float
         if stat == "ops":
             d = ab + bb + hbp + sf
             return round((h + bb + hbp) / d + tb / ab, 3) if ab > 0 and d > 0 else 0.0
-        if stat == "hr":  return float(p["hr"][j]  - p["hr"][i])
-        if stat == "rbi": return float(p["rbi"][j] - p["rbi"][i])
-        if stat == "sb":  return float(p["sb"][j]  - p["sb"][i])
+        if stat == "hr":   return float(p["hr"][j]   - p["hr"][i])
+        if stat == "rbi":  return float(p["rbi"][j]  - p["rbi"][i])
+        if stat == "sb":   return float(p["sb"][j]   - p["sb"][i])
+        if stat == "wins": return float(p["wins"][j] - p["wins"][i])
     return 0.0
 
 
@@ -695,6 +738,28 @@ def get_roster(team_id: int, season: int = Query(CURRENT_YEAR)):
     return result
 
 
+@app.get("/teams/{team_id}/record")
+def get_team_record(team_id: int, season: int = Query(CURRENT_YEAR)):
+    r = requests.get(
+        f"{MLB_API_BASE}/standings",
+        params={"leagueId": "103,104", "season": season, "standingsTypes": "regularSeason"},
+        timeout=10,
+    )
+    if r.status_code != 200:
+        raise HTTPException(status_code=502, detail="Failed to fetch standings")
+    for league in r.json().get("records", []):
+        for entry in league.get("teamRecords", []):
+            if entry["team"]["id"] == team_id:
+                return {
+                    "wins": entry["wins"],
+                    "losses": entry["losses"],
+                    "pct": entry.get("winningPercentage", ".000"),
+                    "gb": entry.get("gamesBack", "-"),
+                    "streak": entry.get("streak", {}).get("streakCode", ""),
+                }
+    raise HTTPException(status_code=404, detail=f"Team {team_id} not found in standings")
+
+
 @app.get("/teams/{team_id}/hot-cold")
 def get_team_hot_cold(
     team_id: int,
@@ -775,12 +840,15 @@ def get_team_stretches(
     length: int = Query(15, ge=3, le=60),
     stat: str = Query("ops"),
 ):
-    if stat not in ALL_STAT_LABELS:
-        raise HTTPException(status_code=400, detail=f"Invalid stat. Choose from: {', '.join(ALL_STAT_LABELS)}")
+    if stat not in TEAM_STAT_LABELS:
+        raise HTTPException(status_code=400, detail=f"Invalid stat. Choose from: {', '.join(TEAM_STAT_LABELS)}")
 
     is_pitching = stat in PITCHING_STAT_LABELS
-    group = "pitching" if is_pitching else "hitting"
-    games = _cached_team_gamelog(team_id, season, group)
+    if stat == "wins":
+        games = _cached_team_wins(team_id, season)
+    else:
+        group = "pitching" if is_pitching else "hitting"
+        games = _cached_team_gamelog(team_id, season, group)
 
     total_games = len(games)
     if total_games < length:
@@ -818,13 +886,14 @@ def get_team_stretches(
                 "start_game": i + 1, "end_game": j,
                 "start_date": games[i]["date"], "end_date": games[j - 1]["date"],
                 "value": value, "value_display": format_stat(value, stat),
-                "hr":   ps["hr"][j]  - ps["hr"][i],
-                "rbi":  ps["rbi"][j] - ps["rbi"][i],
-                "sb":   ps["sb"][j]  - ps["sb"][i],
-                "hits": ps["h"][j]   - ps["h"][i],
-                "ab":   ps["ab"][j]  - ps["ab"][i],
-                "bb":   ps["bb"][j]  - ps["bb"][i],
-                "k":    ps["k"][j]   - ps["k"][i],
+                "hr":   ps["hr"][j]   - ps["hr"][i],
+                "rbi":  ps["rbi"][j]  - ps["rbi"][i],
+                "sb":   ps["sb"][j]   - ps["sb"][i],
+                "hits": ps["h"][j]    - ps["h"][i],
+                "ab":   ps["ab"][j]   - ps["ab"][i],
+                "bb":   ps["bb"][j]   - ps["bb"][i],
+                "k":    ps["k"][j]    - ps["k"][i],
+                "wins": ps["wins"][j] - ps["wins"][i],
             }
         windows.append(window)
 
@@ -835,7 +904,12 @@ def get_team_stretches(
         best_idx = max(range(len(windows)), key=lambda i: windows[i]["value"])
         worst_idx = min(range(len(windows)), key=lambda i: windows[i]["value"])
 
-    season_value, season_value_display = compute_season_value(games, stat, length, compute)
+    if stat == "wins":
+        raw_wins = sum(g["wins"] for g in games)
+        sv = round(raw_wins * length / total_games, 2)
+        season_value, season_value_display = sv, f"{sv:.1f}"
+    else:
+        season_value, season_value_display = compute_season_value(games, stat, length, compute)
 
     values = [w["value"] for w in windows]
     mean_val = sum(values) / len(values) if values else 0

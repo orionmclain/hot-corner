@@ -308,4 +308,10 @@ export class StatsService {
     if (pitcherType) params['pitcher_type'] = pitcherType;
     return this.http.get<TeamLeaderboardData>(`${this.apiUrl}/teams/leaderboard`, { params });
   }
+
+  getTeamRecord(teamId: number, season: number = new Date().getFullYear()): Observable<{ wins: number; losses: number; pct: string; gb: string; streak: string }> {
+    return this.http.get<{ wins: number; losses: number; pct: string; gb: string; streak: string }>(
+      `${this.apiUrl}/teams/${teamId}/record`, { params: { season } }
+    );
+  }
 }

@@ -7,6 +7,12 @@
       <div class="team-info">
         <div class="team-division">{{ team.division }}</div>
         <h1 class="team-name">{{ team.name }}</h1>
+        @if (record) {
+          <div class="team-record">
+            <span class="record-wl">{{ record.wins }}-{{ record.losses }}</span>
+            @if (record.streak) { <span class="record-streak">{{ record.streak }}</span> }
+          </div>
+        }
       </div>
     } @else if (loading) {
       <div class="skeleton circle lg"></div>

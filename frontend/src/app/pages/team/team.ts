@@ -42,6 +42,7 @@ export class Team implements OnInit, OnDestroy {
 
   teamId = 0;
   team: TeamInfo | null = null;
+  record: { wins: number; losses: number; pct: string; gb: string; streak: string } | null = null;
   players: RosterPlayer[] = [];
   loading = true;
   hotColdLoading = true;
@@ -67,12 +68,13 @@ export class Team implements OnInit, OnDestroy {
   readonly Math = Math;
 
   readonly offenseStats = [
-    { value: 'ops', label: 'OPS' },
-    { value: 'avg', label: 'AVG' },
-    { value: 'obp', label: 'OBP' },
-    { value: 'slg', label: 'SLG' },
-    { value: 'hr',  label: 'HR'  },
-    { value: 'rbi', label: 'RBI' },
+    { value: 'ops',  label: 'OPS' },
+    { value: 'avg',  label: 'AVG' },
+    { value: 'obp',  label: 'OBP' },
+    { value: 'slg',  label: 'SLG' },
+    { value: 'hr',   label: 'HR'  },
+    { value: 'rbi',  label: 'RBI' },
+    { value: 'wins', label: 'W'   },
   ];
 
   readonly pitchingChartStats = [
@@ -129,6 +131,11 @@ export class Team implements OnInit, OnDestroy {
 
     this.statsService.getTeams().subscribe({
       next: (teams) => { this.team = teams.find((t) => t.id === this.teamId) ?? null; },
+    });
+
+    this.statsService.getTeamRecord(this.teamId).subscribe({
+      next: (r) => { this.record = r; },
+      error: () => {},
     });
 
     this.statsService.getTeamRoster(this.teamId).subscribe({

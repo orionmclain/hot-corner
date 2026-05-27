@@ -27,6 +27,9 @@
 .team-info { display: flex; flex-direction: column; gap: 4px; }
 .team-division { font-size: 12px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 0.5px; }
 .team-name { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; color: var(--text-primary); }
+.team-record { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
+.record-wl { font-size: 16px; font-weight: 600; color: var(--text-secondary); }
+.record-streak { font-size: 12px; font-weight: 600; color: var(--text-muted); background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 2px 8px; }
 
 .section-header {
   display: flex;
