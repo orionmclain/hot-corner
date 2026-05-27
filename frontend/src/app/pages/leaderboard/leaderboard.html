@@ -156,7 +156,7 @@
               <td class="pos-cell hide-sm">{{ p.position }}</td>
               <td class="val-cell" [class.sorted]="sortBy === 'current'">{{ p.current_value_display }}</td>
               <td class="val-cell season-val" [class.sorted]="sortBy === 'season'">
-                {{ p.season_value_display ?? '—' }}
+                {{ p.season_value_display }}
               </td>
               <td class="stretch-val-cell hide-sm" [class.sorted]="sortBy === 'best'">
                 <span class="best-val">{{ p.best_value_display }}</span>

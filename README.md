@@ -43,12 +43,12 @@ Hot Corner/
 
 ```bash
 cd backend
-pip install -r requirements.txt
+poetry install
 
 # Optional: set your database URL (see Database section)
 export DATABASE_URL=postgresql://user:password@localhost:5432/baseball
 
-python -m uvicorn main:app --reload
+poetry run uvicorn main:app --reload
 ```
 
 Runs on `http://localhost:8000`. Works without a database — falls back to the public MLB Stats API automatically.
