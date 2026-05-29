@@ -3,7 +3,14 @@ name: Nightly DB Sync
 on:
   schedule:
     - cron: '0 6 * * *'  # 6am UTC = 2am ET
-  workflow_dispatch:       # allows manual trigger from GitHub UI
+  workflow_dispatch:
+    inputs:
+      full_backfill:
+        description: 'Run full backfill (all players, no lookback limit)'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['false', 'true']
 
 jobs:
   sync:
@@ -14,6 +21,12 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install poetry && poetry -C backend install --no-root
-      - run: poetry -C backend run python sync.py --lookback 7
+      - name: Run sync
+        run: |
+          if [ "${{ github.event.inputs.full_backfill }}" = "true" ]; then
+            poetry -C backend run python sync.py
+          else
+            poetry -C backend run python sync.py --lookback 7
+          fi
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
