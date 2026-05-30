@@ -263,6 +263,17 @@ def fetch_recent_player_ids(conn, days: int, season: int) -> set[int]:
         return {row[0] for row in cur.fetchall()}
 
 
+def fetch_known_player_ids(conn, season: int) -> set[int]:
+    """Return all player IDs already in the DB for this season."""
+    with conn.cursor() as cur:
+        cur.execute("""
+            SELECT DISTINCT player_id FROM hitting_game_logs WHERE season = %s
+            UNION
+            SELECT DISTINCT player_id FROM pitching_game_logs WHERE season = %s
+        """, (season, season))
+        return {row[0] for row in cur.fetchall()}
+
+
 # ── Per-player game log sync ───────────────────────────────────────────────────
 
 def sync_player(player: dict, season: int) -> tuple[int, str, str]:
@@ -346,10 +357,16 @@ def run_sync(seasons: list[int], player_ids: list[int] | None = None, workers: i
             conn = get_conn()
             try:
                 recent_ids = fetch_recent_player_ids(conn, lookback, season)
+                known_ids = fetch_known_player_ids(conn, season)
             finally:
                 conn.close()
-            all_players = [p for p in all_players if p["id"] in recent_ids]
-            log.info(f"  Lookback {lookback}d: {len(all_players)} players active in last {lookback} days")
+            new_ids = {p["id"] for p in all_players} - known_ids
+            target_ids = recent_ids | new_ids
+            all_players = [p for p in all_players if p["id"] in target_ids]
+            log.info(
+                f"  Lookback {lookback}d: {len(recent_ids)} recently active, "
+                f"{len(new_ids)} new players never synced — {len(all_players)} total"
+            )
 
         total = len(all_players)
         log.info(f"  {total} players to sync (workers={workers})")

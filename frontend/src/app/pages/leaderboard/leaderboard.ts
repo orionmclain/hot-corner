@@ -92,9 +92,19 @@ export class Leaderboard implements OnInit {
     },
   ];
 
+  filtersOpen = false;
+
   get isPitchingStat() { return PITCHING_STATS.has(this.selectedStat); }
   get isCountStat()    { return ['hr', 'rbi', 'sb', 'k', 'bb', 'er'].includes(this.selectedStat); }
   get isCurrentSeason(){ return this.season === this.currentYear; }
+
+  get selectedStatLabel(): string {
+    for (const g of this.statGroups) {
+      const opt = g.options.find(o => o.value === this.selectedStat);
+      if (opt) return opt.label;
+    }
+    return this.selectedStat.toUpperCase();
+  }
 
   // ── Player view ──────────────────────────────────────────────────────────────
 

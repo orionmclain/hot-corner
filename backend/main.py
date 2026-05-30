@@ -205,11 +205,14 @@ def _cached_gamelog(player_id: int, season: int, group: str) -> list[dict]:
         pass  # DB unavailable or player not yet synced — fall through
 
     # L3: MLB Stats API (fallback / source of truth)
-    r = requests.get(
-        f"{MLB_API_BASE}/people/{player_id}/stats",
-        params={"stats": "gameLog", "group": group, "season": season, "gameType": "R"},
-        timeout=15,
-    )
+    try:
+        r = requests.get(
+            f"{MLB_API_BASE}/people/{player_id}/stats",
+            params={"stats": "gameLog", "group": group, "season": season, "gameType": "R"},
+            timeout=15,
+        )
+    except requests.exceptions.RequestException:
+        raise HTTPException(status_code=502, detail="MLB API unavailable — try again shortly")
     if r.status_code != 200:
         raise HTTPException(status_code=502, detail="Failed to fetch game log from MLB API")
     data = r.json()

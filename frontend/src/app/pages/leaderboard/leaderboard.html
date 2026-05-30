@@ -15,78 +15,90 @@
 
   <!-- ── Controls ── -->
   <div class="controls-bar">
-    <div class="control-group">
-      <label class="control-label">Season</label>
-      <select class="control-select" [(ngModel)]="season" (change)="load()">
-        @for (yr of seasons; track yr) { <option [value]="yr">{{ yr }}</option> }
-      </select>
+    <div class="controls-mobile-header">
+      <span class="controls-summary">
+        <strong>{{ selectedStatLabel }}</strong> · {{ stretchLength }}G · {{ view === 'players' ? 'Players' : 'Teams' }}
+      </span>
+      <button class="controls-toggle" (click)="filtersOpen = !filtersOpen">
+        Filters
+        <svg class="toggle-chevron" [class.open]="filtersOpen" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
     </div>
 
-    <div class="control-group">
-      <label class="control-label">Stretch</label>
-      <div class="slider-row">
-        <span class="slider-bound">{{ isPitchingStat ? 3 : 5 }}</span>
-        <input class="range-input" type="range" [min]="isPitchingStat ? 3 : 5" max="50" step="1"
-          [(ngModel)]="stretchLength" (change)="load()" />
-        <span class="slider-bound">50</span>
-        <strong class="slider-value">{{ stretchLength }}G</strong>
-      </div>
-    </div>
-
-    <div class="control-group stat-group">
-      <label class="control-label">Stat</label>
-      <div class="stat-tabs">
-        @for (group of statGroups; track group.label) {
-          @for (opt of group.options; track opt.value) {
-            <button
-              class="stat-tab"
-              [class.active]="selectedStat === opt.value"
-              (click)="selectStat(opt.value)"
-            >{{ opt.label }}</button>
-          }
-          @if (!$last) { <span class="stat-divider"></span> }
-        }
-      </div>
-    </div>
-
-    @if (isPitchingStat) {
+    <div class="controls-body" [class.open]="filtersOpen">
       <div class="control-group">
-        <label class="control-label">Pitcher Type</label>
-        <div class="pitcher-tabs">
-          <button class="pitcher-tab" [class.active]="pitcherType === 'sp'" (click)="selectPitcherType('sp')">SP</button>
-          <button class="pitcher-tab" [class.active]="pitcherType === 'rp'" (click)="selectPitcherType('rp')">RP</button>
-        </div>
-      </div>
-    }
-
-    @if (!isPitchingStat && view === 'players') {
-      <div class="control-group">
-        <label class="control-label">Position</label>
-        <div class="pos-chips">
-          <button class="pos-chip" [class.active]="selectedPosition === ''" (click)="selectedPosition = ''">All</button>
-          @for (pos of hitterPositions; track pos) {
-            <button class="pos-chip" [class.active]="selectedPosition === pos" (click)="selectedPosition = pos">{{ pos }}</button>
-          }
-        </div>
-      </div>
-    }
-
-    @if (view === 'players') {
-      <div class="control-group">
-        <label class="control-label">Team</label>
-        <select class="control-select" [(ngModel)]="selectedTeam">
-          <option value="">All Teams</option>
-          @for (team of availableTeams; track team) {
-            <option [value]="team">{{ team }}</option>
-          }
+        <label class="control-label">Season</label>
+        <select class="control-select" [(ngModel)]="season" (change)="load()">
+          @for (yr of seasons; track yr) { <option [value]="yr">{{ yr }}</option> }
         </select>
       </div>
 
-      <div class="control-group search-group">
-        <label class="control-label">Search</label>
-        <input class="search-input" type="text" placeholder="Player name…" [(ngModel)]="searchQuery" />
+      <div class="control-group">
+        <label class="control-label">Stretch</label>
+        <div class="slider-row">
+          <span class="slider-bound">{{ isPitchingStat ? 3 : 5 }}</span>
+          <input class="range-input" type="range" [min]="isPitchingStat ? 3 : 5" max="50" step="1"
+            [(ngModel)]="stretchLength" (change)="load()" />
+          <span class="slider-bound">50</span>
+          <strong class="slider-value">{{ stretchLength }}G</strong>
+        </div>
       </div>
-    }
+
+      <div class="control-group stat-group">
+        <label class="control-label">Stat</label>
+        <div class="stat-tabs">
+          @for (group of statGroups; track group.label) {
+            @for (opt of group.options; track opt.value) {
+              <button
+                class="stat-tab"
+                [class.active]="selectedStat === opt.value"
+                (click)="selectStat(opt.value)"
+              >{{ opt.label }}</button>
+            }
+            @if (!$last) { <span class="stat-divider"></span> }
+          }
+        </div>
+      </div>
+
+      @if (isPitchingStat) {
+        <div class="control-group">
+          <label class="control-label">Pitcher Type</label>
+          <div class="pitcher-tabs">
+            <button class="pitcher-tab" [class.active]="pitcherType === 'sp'" (click)="selectPitcherType('sp')">SP</button>
+            <button class="pitcher-tab" [class.active]="pitcherType === 'rp'" (click)="selectPitcherType('rp')">RP</button>
+          </div>
+        </div>
+      }
+
+      @if (!isPitchingStat && view === 'players') {
+        <div class="control-group">
+          <label class="control-label">Position</label>
+          <div class="pos-chips">
+            <button class="pos-chip" [class.active]="selectedPosition === ''" (click)="selectedPosition = ''">All</button>
+            @for (pos of hitterPositions; track pos) {
+              <button class="pos-chip" [class.active]="selectedPosition === pos" (click)="selectedPosition = pos">{{ pos }}</button>
+            }
+          </div>
+        </div>
+      }
+
+      @if (view === 'players') {
+        <div class="control-group">
+          <label class="control-label">Team</label>
+          <select class="control-select" [(ngModel)]="selectedTeam">
+            <option value="">All Teams</option>
+            @for (team of availableTeams; track team) {
+              <option [value]="team">{{ team }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="control-group search-group">
+          <label class="control-label">Search</label>
+          <input class="search-input" type="text" placeholder="Player name…" [(ngModel)]="searchQuery" />
+        </div>
+      }
+    </div>
   </div>
 
   <!-- ── Results summary ── -->
