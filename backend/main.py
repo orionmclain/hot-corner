@@ -397,7 +397,7 @@ def build_prefix_sums(games: list[dict], is_pitching: bool) -> dict:
         p = {k: [0] * (n + 1) for k in keys}
         for i, g in enumerate(games, 1):
             for k, field in keys.items():
-                p[k][i] = p[k][i-1] + g[field]
+                p[k][i] = p[k][i-1] + g.get(field, 0)
     else:
         keys = {"ab": "atBats", "h": "hits", "bb": "baseOnBalls",
                 "hbp": "hitByPitch", "sf": "sacFlies", "tb": "totalBases",
@@ -406,7 +406,7 @@ def build_prefix_sums(games: list[dict], is_pitching: bool) -> dict:
         p = {k: [0] * (n + 1) for k in keys}
         for i, g in enumerate(games, 1):
             for k, field in keys.items():
-                p[k][i] = p[k][i-1] + g[field]
+                p[k][i] = p[k][i-1] + g.get(field, 0)
     return p
 
 
