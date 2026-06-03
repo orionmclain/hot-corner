@@ -77,6 +77,8 @@ export class Leaderboard implements OnInit {
         { value: 'whip', label: 'WHIP' },
         { value: 'k9',   label: 'K/9'  },
         { value: 'k',    label: 'K'    },
+        { value: 'bb',   label: 'BB'   },
+        { value: 'er',   label: 'ER'   },
       ],
     },
   ];

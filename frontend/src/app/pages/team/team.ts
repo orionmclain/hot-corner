@@ -82,6 +82,8 @@ export class Team implements OnInit, OnDestroy {
     { value: 'whip', label: 'WHIP' },
     { value: 'k9',   label: 'K/9'  },
     { value: 'k',    label: 'K'    },
+    { value: 'bb',   label: 'BB'   },
+    { value: 'er',   label: 'ER'   },
   ];
 
   get chartStatOptions() {
@@ -106,6 +108,7 @@ export class Team implements OnInit, OnDestroy {
   readonly pitchingStats = [
     { value: 'era',  label: 'ERA'  }, { value: 'whip', label: 'WHIP' },
     { value: 'k9',   label: 'K/9'  }, { value: 'k',    label: 'K'    },
+    { value: 'bb',   label: 'BB'   }, { value: 'er',   label: 'ER'   },
   ];
 
   ngOnInit() {

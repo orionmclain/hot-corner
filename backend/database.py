@@ -25,18 +25,18 @@ _HITTING_SORT_SQL = {
         "/ NULLIF(SUM(at_bats) + SUM(base_on_balls) + SUM(hit_by_pitch) + SUM(sac_flies), 0)"
     ),
     "slg": "SUM(total_bases)::float / NULLIF(SUM(at_bats), 0)",
-    "hr":  "SUM(home_runs)",
+    "hr": "SUM(home_runs)",
     "rbi": "SUM(rbi)",
-    "sb":  "SUM(stolen_bases)",
+    "sb": "SUM(stolen_bases)",
 }
 
 _PITCHING_SORT_SQL = {
-    "era":  "SUM(earned_runs)::float / NULLIF(SUM(outs)::float / 3.0, 0) * 9",
+    "era": "SUM(earned_runs)::float / NULLIF(SUM(outs)::float / 3.0, 0) * 9",
     "whip": "(SUM(base_on_balls) + SUM(hits))::float / NULLIF(SUM(outs)::float / 3.0, 0)",
-    "k9":   "SUM(strike_outs)::float / NULLIF(SUM(outs)::float / 3.0, 0) * 9",
-    "k":    "SUM(strike_outs)",
-    "bb":   "SUM(base_on_balls)",
-    "er":   "SUM(earned_runs)",
+    "k9": "SUM(strike_outs)::float / NULLIF(SUM(outs)::float / 3.0, 0) * 9",
+    "k": "SUM(strike_outs)",
+    "bb": "SUM(base_on_balls)",
+    "er": "SUM(earned_runs)",
 }
 
 
@@ -55,6 +55,7 @@ def _get_pool():
         raise DatabaseUnavailable("DATABASE_URL not set")
     try:
         from psycopg2.pool import ThreadedConnectionPool
+
         _pool = ThreadedConnectionPool(minconn=2, maxconn=20, dsn=DATABASE_URL)
         return _pool
     except Exception as e:
@@ -72,6 +73,7 @@ def _get_conn():
 
 
 # ── Game logs ──────────────────────────────────────────────────────────────────
+
 
 def fetch_game_log(player_id: int, season: int, group: str) -> list[dict]:
     """Return parsed game dicts ordered by game_date. Returns [] if no rows."""
@@ -92,12 +94,22 @@ def fetch_game_log(player_id: int, season: int, group: str) -> list[dict]:
                 )
                 return [
                     {
-                        "date": row[0].isoformat(), "opponent": row[1],
-                        "atBats": row[2], "hits": row[3], "doubles": row[4],
-                        "triples": row[5], "homeRuns": row[6], "baseOnBalls": row[7],
-                        "hitByPitch": row[8], "sacFlies": row[9], "totalBases": row[10],
-                        "rbi": row[11], "stolenBases": row[12], "strikeOuts": row[13],
-                        "runs": row[14], "plateAppearances": row[15],
+                        "date": row[0].isoformat(),
+                        "opponent": row[1],
+                        "atBats": row[2],
+                        "hits": row[3],
+                        "doubles": row[4],
+                        "triples": row[5],
+                        "homeRuns": row[6],
+                        "baseOnBalls": row[7],
+                        "hitByPitch": row[8],
+                        "sacFlies": row[9],
+                        "totalBases": row[10],
+                        "rbi": row[11],
+                        "stolenBases": row[12],
+                        "strikeOuts": row[13],
+                        "runs": row[14],
+                        "plateAppearances": row[15],
                     }
                     for row in cur.fetchall()
                 ]
@@ -115,17 +127,25 @@ def fetch_game_log(player_id: int, season: int, group: str) -> list[dict]:
                 )
                 return [
                     {
-                        "date": row[0].isoformat(), "opponent": row[1],
-                        "outs": row[2], "ip_display": f"{row[2] // 3}.{row[2] % 3}",
-                        "gameStarted": row[3], "earnedRuns": row[4], "hits": row[5],
-                        "strikeOuts": row[6], "baseOnBalls": row[7],
-                        "hitByPitch": row[8], "homeRuns": row[9], "runs": row[10],
+                        "date": row[0].isoformat(),
+                        "opponent": row[1],
+                        "outs": row[2],
+                        "ip_display": f"{row[2] // 3}.{row[2] % 3}",
+                        "gameStarted": row[3],
+                        "earnedRuns": row[4],
+                        "hits": row[5],
+                        "strikeOuts": row[6],
+                        "baseOnBalls": row[7],
+                        "hitByPitch": row[8],
+                        "homeRuns": row[9],
+                        "runs": row[10],
                     }
                     for row in cur.fetchall()
                 ]
 
 
 # ── Players ────────────────────────────────────────────────────────────────────
+
 
 def search_players(q: str, limit: int = 10) -> list[dict]:
     """Full-name trigram/ILIKE search against the local players table."""
@@ -177,13 +197,17 @@ def fetch_player(player_id: int) -> dict | None:
             if not row:
                 return None
             return {
-                "id": row[0], "full_name": row[1],
-                "first_name": row[2] or "", "last_name": row[3] or "",
-                "position": row[4] or "", "team_id": row[5],
+                "id": row[0],
+                "full_name": row[1],
+                "first_name": row[2] or "",
+                "last_name": row[3] or "",
+                "position": row[4] or "",
+                "team_id": row[5],
             }
 
 
 # ── Teams ──────────────────────────────────────────────────────────────────────
+
 
 def fetch_teams() -> list[dict]:
     """Return all teams ordered by name. Returns [] if table is empty."""
@@ -194,9 +218,13 @@ def fetch_teams() -> list[dict]:
             )
             return [
                 {
-                    "id": row[0], "name": row[1], "team_name": row[2],
-                    "abbreviation": row[3], "location": row[4],
-                    "league": row[5], "division": row[6],
+                    "id": row[0],
+                    "name": row[1],
+                    "team_name": row[2],
+                    "abbreviation": row[3],
+                    "location": row[4],
+                    "league": row[5],
+                    "division": row[6],
                     "logo_url": f"https://www.mlbstatic.com/team-logos/{row[0]}.svg",
                 }
                 for row in cur.fetchall()
@@ -204,6 +232,7 @@ def fetch_teams() -> list[dict]:
 
 
 # ── Rosters ────────────────────────────────────────────────────────────────────
+
 
 def fetch_roster(team_id: int, season: int) -> dict | None:
     """
@@ -247,7 +276,10 @@ def fetch_roster(team_id: int, season: int) -> dict | None:
 
 # ── Team leaderboard ───────────────────────────────────────────────────────────
 
-def fetch_team_leaderboard(stat: str, season: int, length: int, pitcher_type: str | None) -> list[dict]:
+
+def fetch_team_leaderboard(
+    stat: str, season: int, length: int, pitcher_type: str | None
+) -> list[dict]:
     """
     Aggregate game-log stats by team for their last `length` game dates.
     team_date_rank uses DISTINCT (team_id, game_date) to avoid join inflation.
@@ -326,6 +358,7 @@ def fetch_team_leaderboard(stat: str, season: int, length: int, pitcher_type: st
 
 
 # ── Leaderboard candidates ─────────────────────────────────────────────────────
+
 
 def fetch_leaderboard_candidates(
     stat: str, season: int, pitcher_type: str | None

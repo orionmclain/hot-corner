@@ -41,6 +41,7 @@ log = logging.getLogger(__name__)
 
 # ── DB connection ──────────────────────────────────────────────────────────────
 
+
 def get_conn():
     url = os.environ.get("DATABASE_URL", "")
     if not url:
@@ -49,6 +50,7 @@ def get_conn():
 
 
 # ── MLB API helpers ────────────────────────────────────────────────────────────
+
 
 def fetch_all_players(season: int) -> list[dict]:
     r = requests.get(
@@ -82,7 +84,8 @@ def fetch_mlb_teams(season: int) -> list[dict]:
     )
     r.raise_for_status()
     return [
-        t for t in r.json().get("teams", [])
+        t
+        for t in r.json().get("teams", [])
         if t.get("sport", {}).get("id") == 1
         and t.get("active", False)
         and t.get("allStarStatus") == "N"
@@ -102,6 +105,7 @@ def fetch_mlb_roster(team_id: int, season: int) -> list[dict]:
 
 # ── Upsert helpers ─────────────────────────────────────────────────────────────
 
+
 def _parse_outs(ip_str) -> int:
     ip = float(str(ip_str))
     full = int(ip)
@@ -113,17 +117,28 @@ def upsert_hitting(conn, player_id: int, season: int, splits: list[dict]) -> int
     rows = []
     for s in splits:
         st = s.get("stat", {})
-        rows.append((
-            player_id, season, s["date"],
-            s.get("opponent", {}).get("name", ""),
-            st.get("atBats", 0), st.get("hits", 0),
-            st.get("doubles", 0), st.get("triples", 0),
-            st.get("homeRuns", 0), st.get("baseOnBalls", 0),
-            st.get("hitByPitch", 0), st.get("sacFlies", 0),
-            st.get("totalBases", 0), st.get("rbi", 0),
-            st.get("stolenBases", 0), st.get("strikeOuts", 0),
-            st.get("runs", 0), st.get("plateAppearances", 0),
-        ))
+        rows.append(
+            (
+                player_id,
+                season,
+                s["date"],
+                s.get("opponent", {}).get("name", ""),
+                st.get("atBats", 0),
+                st.get("hits", 0),
+                st.get("doubles", 0),
+                st.get("triples", 0),
+                st.get("homeRuns", 0),
+                st.get("baseOnBalls", 0),
+                st.get("hitByPitch", 0),
+                st.get("sacFlies", 0),
+                st.get("totalBases", 0),
+                st.get("rbi", 0),
+                st.get("stolenBases", 0),
+                st.get("strikeOuts", 0),
+                st.get("runs", 0),
+                st.get("plateAppearances", 0),
+            )
+        )
     rows = list({r[2]: r for r in rows}.values())
     if not rows:
         return 0
@@ -153,16 +168,23 @@ def upsert_pitching(conn, player_id: int, season: int, splits: list[dict]) -> in
     rows = []
     for s in splits:
         st = s.get("stat", {})
-        rows.append((
-            player_id, season, s["date"],
-            s.get("opponent", {}).get("name", ""),
-            _parse_outs(st.get("inningsPitched", "0")),
-            bool(st.get("gamesStarted", 0)),
-            st.get("earnedRuns", 0), st.get("hits", 0),
-            st.get("strikeOuts", 0), st.get("baseOnBalls", 0),
-            st.get("hitByPitch", 0), st.get("homeRuns", 0),
-            st.get("runs", 0),
-        ))
+        rows.append(
+            (
+                player_id,
+                season,
+                s["date"],
+                s.get("opponent", {}).get("name", ""),
+                _parse_outs(st.get("inningsPitched", "0")),
+                bool(st.get("gamesStarted", 0)),
+                st.get("earnedRuns", 0),
+                st.get("hits", 0),
+                st.get("strikeOuts", 0),
+                st.get("baseOnBalls", 0),
+                st.get("hitByPitch", 0),
+                st.get("homeRuns", 0),
+                st.get("runs", 0),
+            )
+        )
     rows = list({r[2]: r for r in rows}.values())
     if not rows:
         return 0
@@ -195,23 +217,33 @@ def upsert_player(conn, player: dict, classified_pos: str):
             team_id=EXCLUDED.team_id, active=TRUE, updated_at=NOW()
     """
     with conn.cursor() as cur:
-        cur.execute(sql, (
-            player["id"],
-            player.get("fullName", ""),
-            player.get("firstName", ""),
-            player.get("lastName", ""),
-            classified_pos,
-            player.get("currentTeam", {}).get("id"),
-        ))
+        cur.execute(
+            sql,
+            (
+                player["id"],
+                player.get("fullName", ""),
+                player.get("firstName", ""),
+                player.get("lastName", ""),
+                classified_pos,
+                player.get("currentTeam", {}).get("id"),
+            ),
+        )
     conn.commit()
 
 
 def upsert_teams(conn, teams: list[dict]):
-    rows = [(
-        t["id"], t["name"], t.get("teamName", ""), t.get("abbreviation", ""),
-        t.get("locationName", ""), t.get("league", {}).get("name", ""),
-        t.get("division", {}).get("name", ""),
-    ) for t in teams]
+    rows = [
+        (
+            t["id"],
+            t["name"],
+            t.get("teamName", ""),
+            t.get("abbreviation", ""),
+            t.get("locationName", ""),
+            t.get("league", {}).get("name", ""),
+            t.get("division", {}).get("name", ""),
+        )
+        for t in teams
+    ]
     if not rows:
         return
     sql = """
@@ -228,13 +260,16 @@ def upsert_teams(conn, teams: list[dict]):
 
 
 def upsert_roster(conn, team_id: int, season: int, roster: list[dict]):
-    rows = [(
-        team_id,
-        p["person"]["id"],
-        season,
-        p.get("position", {}).get("abbreviation", ""),
-        p.get("jerseyNumber", ""),
-    ) for p in roster]
+    rows = [
+        (
+            team_id,
+            p["person"]["id"],
+            season,
+            p.get("position", {}).get("abbreviation", ""),
+            p.get("jerseyNumber", ""),
+        )
+        for p in roster
+    ]
     if not rows:
         return
     sql = """
@@ -250,38 +285,46 @@ def upsert_roster(conn, team_id: int, season: int, roster: list[dict]):
 
 # ── Lookback helpers ──────────────────────────────────────────────────────────
 
+
 def fetch_recent_player_ids(conn, days: int, season: int) -> set[int]:
     cutoff = (datetime.now() - timedelta(days=days)).date()
     with conn.cursor() as cur:
-        cur.execute("""
+        cur.execute(
+            """
             SELECT DISTINCT player_id FROM hitting_game_logs
             WHERE season = %s AND game_date >= %s
             UNION
             SELECT DISTINCT player_id FROM pitching_game_logs
             WHERE season = %s AND game_date >= %s
-        """, (season, cutoff, season, cutoff))
+        """,
+            (season, cutoff, season, cutoff),
+        )
         return {row[0] for row in cur.fetchall()}
 
 
 def fetch_known_player_ids(conn, season: int) -> set[int]:
     """Return all player IDs already in the DB for this season."""
     with conn.cursor() as cur:
-        cur.execute("""
+        cur.execute(
+            """
             SELECT DISTINCT player_id FROM hitting_game_logs WHERE season = %s
             UNION
             SELECT DISTINCT player_id FROM pitching_game_logs WHERE season = %s
-        """, (season, season))
+        """,
+            (season, season),
+        )
         return {row[0] for row in cur.fetchall()}
 
 
 # ── Per-player game log sync ───────────────────────────────────────────────────
 
+
 def sync_player(player: dict, season: int) -> tuple[int, str, str]:
     """Fetch and upsert one player's game log + player record.
     Returns (rows_written, status, classified_position).
     """
-    pid  = player["id"]
-    pos  = player.get("primaryPosition", {}).get("abbreviation", "")
+    pid = player["id"]
+    pos = player.get("primaryPosition", {}).get("abbreviation", "")
     name = player.get("fullName", str(pid))
     group = "pitching" if pos in PITCHER_POSITIONS else "hitting"
 
@@ -294,7 +337,9 @@ def sync_player(player: dict, season: int) -> tuple[int, str, str]:
         classified_pos = pos
         if pos in PITCHER_POSITIONS:
             gs = sum(1 for s in splits if s.get("stat", {}).get("gamesStarted", 0))
-            classified_pos = "SP" if len(splits) > 0 and gs / len(splits) >= 0.5 else "RP"
+            classified_pos = (
+                "SP" if len(splits) > 0 and gs / len(splits) >= 0.5 else "RP"
+            )
 
         conn = get_conn()
         try:
@@ -312,6 +357,7 @@ def sync_player(player: dict, season: int) -> tuple[int, str, str]:
 
 
 # ── Teams + roster sync ────────────────────────────────────────────────────────
+
 
 def sync_teams_and_rosters(season: int):
     log.info("  Syncing teams...")
@@ -341,7 +387,13 @@ def sync_teams_and_rosters(season: int):
 
 # ── Main sync loop ─────────────────────────────────────────────────────────────
 
-def run_sync(seasons: list[int], player_ids: list[int] | None = None, workers: int = 12, lookback: int | None = None):
+
+def run_sync(
+    seasons: list[int],
+    player_ids: list[int] | None = None,
+    workers: int = 12,
+    lookback: int | None = None,
+):
     for season in seasons:
         log.info(f"── Season {season} ──────────────────────────────────")
 
@@ -384,7 +436,9 @@ def run_sync(seasons: list[int], player_ids: list[int] | None = None, workers: i
                 else:
                     skipped += 1
                 if i % 50 == 0 or i == total:
-                    log.info(f"  {i}/{total}  ok={ok}  errors={errors}  skipped={skipped}")
+                    log.info(
+                        f"  {i}/{total}  ok={ok}  errors={errors}  skipped={skipped}"
+                    )
 
         log.info(
             f"  Done — {ok} players synced, {total_rows} rows upserted, "
@@ -397,7 +451,11 @@ if __name__ == "__main__":
     parser.add_argument("--seasons", type=int, nargs="+", default=[CURRENT_YEAR])
     parser.add_argument("--players", type=int, nargs="+")
     parser.add_argument("--workers", type=int, default=12)
-    parser.add_argument("--lookback", type=int, default=None,
-                        help="Only re-sync players with games in the last N days")
+    parser.add_argument(
+        "--lookback",
+        type=int,
+        default=None,
+        help="Only re-sync players with games in the last N days",
+    )
     args = parser.parse_args()
     run_sync(args.seasons, args.players, args.workers, args.lookback)
