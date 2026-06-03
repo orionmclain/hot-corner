@@ -6,23 +6,35 @@
         <h1 class="lb-title">Leaderboard</h1>
         <p class="lb-sub">{{ stretchLength }}-game stretch vs season averages</p>
       </div>
-      <div class="view-tabs">
-        <button class="view-tab" [class.active]="view === 'players'" (click)="setView('players')">Players</button>
-        <button class="view-tab" [class.active]="view === 'teams'" (click)="setView('teams')">Teams</button>
-      </div>
     </div>
   </div>
 
   <!-- ── Controls ── -->
   <div class="controls-bar">
     <div class="controls-mobile-header">
-      <span class="controls-summary">
-        <strong>{{ selectedStatLabel }}</strong> · {{ stretchLength }}G · {{ view === 'players' ? 'Players' : 'Teams' }}
-      </span>
+      <span class="controls-stat-chip">{{ selectedStatLabel }}</span>
+      <div class="slider-row controls-inline-slider">
+        <span class="slider-bound">{{ isPitchingStat ? 3 : 5 }}</span>
+        <input class="range-input" type="range" [min]="isPitchingStat ? 3 : 5" max="50" step="1"
+          [(ngModel)]="stretchLength" (change)="load()" />
+        <span class="slider-bound">50</span>
+        <strong class="slider-value">{{ stretchLength }}G</strong>
+      </div>
       <button class="controls-toggle" (click)="filtersOpen = !filtersOpen">
         Filters
         <svg class="toggle-chevron" [class.open]="filtersOpen" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
       </button>
+    </div>
+
+    <div class="control-group slider-always">
+      <label class="control-label">Stretch</label>
+      <div class="slider-row">
+        <span class="slider-bound">{{ isPitchingStat ? 3 : 5 }}</span>
+        <input class="range-input" type="range" [min]="isPitchingStat ? 3 : 5" max="50" step="1"
+          [(ngModel)]="stretchLength" (change)="load()" />
+        <span class="slider-bound">50</span>
+        <strong class="slider-value">{{ stretchLength }}G</strong>
+      </div>
     </div>
 
     <div class="controls-body" [class.open]="filtersOpen">
@@ -31,17 +43,6 @@
         <select class="control-select" [(ngModel)]="season" (change)="load()">
           @for (yr of seasons; track yr) { <option [value]="yr">{{ yr }}</option> }
         </select>
-      </div>
-
-      <div class="control-group">
-        <label class="control-label">Stretch</label>
-        <div class="slider-row">
-          <span class="slider-bound">{{ isPitchingStat ? 3 : 5 }}</span>
-          <input class="range-input" type="range" [min]="isPitchingStat ? 3 : 5" max="50" step="1"
-            [(ngModel)]="stretchLength" (change)="load()" />
-          <span class="slider-bound">50</span>
-          <strong class="slider-value">{{ stretchLength }}G</strong>
-        </div>
       </div>
 
       <div class="control-group stat-group">
@@ -70,7 +71,7 @@
         </div>
       }
 
-      @if (!isPitchingStat && view === 'players') {
+      @if (!isPitchingStat) {
         <div class="control-group">
           <label class="control-label">Position</label>
           <div class="pos-chips">
@@ -82,27 +83,25 @@
         </div>
       }
 
-      @if (view === 'players') {
-        <div class="control-group">
-          <label class="control-label">Team</label>
-          <select class="control-select" [(ngModel)]="selectedTeam">
-            <option value="">All Teams</option>
-            @for (team of availableTeams; track team) {
-              <option [value]="team">{{ team }}</option>
-            }
-          </select>
-        </div>
+      <div class="control-group">
+        <label class="control-label">Team</label>
+        <select class="control-select" [(ngModel)]="selectedTeam">
+          <option value="">All Teams</option>
+          @for (team of availableTeams; track team) {
+            <option [value]="team">{{ team }}</option>
+          }
+        </select>
+      </div>
 
-        <div class="control-group search-group">
-          <label class="control-label">Search</label>
-          <input class="search-input" type="text" placeholder="Player name…" [(ngModel)]="searchQuery" />
-        </div>
-      }
+      <div class="control-group search-group">
+        <label class="control-label">Search</label>
+        <input class="search-input" type="text" placeholder="Player name…" [(ngModel)]="searchQuery" />
+      </div>
     </div>
   </div>
 
   <!-- ── Results summary ── -->
-  @if (view === 'players' && data && !loading) {
+  @if (data && !loading) {
     <div class="results-summary">
       @if (filteredPlayers.length === data.players.length) {
         {{ data.players.length }} players
@@ -124,7 +123,7 @@
     } @else if (error) {
       <div class="lb-error">⚠️ {{ error }}</div>
 
-    } @else if (view === 'players' && data) {
+    } @else if (data) {
       <table class="lb-table">
         <thead>
           <tr>
@@ -140,13 +139,13 @@
               {{ isCountStat ? 'Avg/' + data.stretch_length + 'G' : 'Season Avg' }}
               <span class="sort-arrow">{{ sortArrow('season') }}</span>
             </th>
-            <th class="val-col sortable hide-sm" [class.sorted]="sortBy === 'best'" (click)="sort('best')">
+            <th class="val-col sortable" [class.sorted]="sortBy === 'best'" (click)="sort('best')">
               Best <span class="sort-arrow">{{ sortArrow('best') }}</span>
             </th>
-            <th class="val-col sortable hide-sm" [class.sorted]="sortBy === 'worst'" (click)="sort('worst')">
+            <th class="val-col sortable" [class.sorted]="sortBy === 'worst'" (click)="sort('worst')">
               Worst <span class="sort-arrow">{{ sortArrow('worst') }}</span>
             </th>
-            <th class="sortable hide-sm" [class.sorted]="sortBy === 'form'" (click)="sort('form')">
+            <th class="sortable" [class.sorted]="sortBy === 'form'" (click)="sort('form')">
               Form <span class="sort-arrow">{{ sortArrow('form') }}</span>
             </th>
           </tr>
@@ -170,15 +169,15 @@
               <td class="val-cell season-val" [class.sorted]="sortBy === 'season'">
                 {{ p.season_value_display }}
               </td>
-              <td class="stretch-val-cell hide-sm" [class.sorted]="sortBy === 'best'">
+              <td class="stretch-val-cell" [class.sorted]="sortBy === 'best'">
                 <span class="best-val">{{ p.best_value_display }}</span>
                 <span class="stretch-dates">{{ dateRange(p.best_start_date, p.best_end_date) }}</span>
               </td>
-              <td class="stretch-val-cell hide-sm" [class.sorted]="sortBy === 'worst'">
+              <td class="stretch-val-cell" [class.sorted]="sortBy === 'worst'">
                 <span class="worst-val">{{ p.worst_value_display }}</span>
                 <span class="stretch-dates">{{ dateRange(p.worst_start_date, p.worst_end_date) }}</span>
               </td>
-              <td class="form-cell hide-sm" [class.sorted]="sortBy === 'form'">
+              <td class="form-cell" [class.sorted]="sortBy === 'form'">
                 <div class="form-cell-inner">
                   @if (isCurrentSeason) {
                     @if (p.hot_cold === 'on_fire') { <span class="hc-pill on-fire">🔥 On Fire</span> }
@@ -194,60 +193,6 @@
                   }
                   <span class="form-delta" [class.positive]="formDeltaPct(p) > 0" [class.negative]="formDeltaPct(p) < 0">
                     {{ formDeltaDisplay(p) }} vs avg
-                  </span>
-                </div>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-
-    } @else if (view === 'teams' && teamData) {
-      <table class="lb-table">
-        <thead>
-          <tr>
-            <th class="rank-col">#</th>
-            <th>Team</th>
-            <th class="val-col sortable" [class.sorted]="teamSortBy === 'current'" (click)="sortTeam('current')">
-              Last {{ teamData.stretch_length }}G
-              <span class="sort-arrow">{{ teamSortArrow('current') }}</span>
-            </th>
-            <th class="val-col sortable" [class.sorted]="teamSortBy === 'season'" (click)="sortTeam('season')">
-              {{ isCountStat ? 'Avg/' + teamData.stretch_length + 'G' : 'Season Avg' }}
-              <span class="sort-arrow">{{ teamSortArrow('season') }}</span>
-            </th>
-            <th class="sortable hide-sm" [class.sorted]="teamSortBy === 'form'" (click)="sortTeam('form')">
-              Form <span class="sort-arrow">{{ teamSortArrow('form') }}</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (t of sortedTeams; track t.team_id; let i = $index) {
-            <tr class="lb-row team-row" (click)="goToTeam(t)">
-              <td class="rank-cell">
-                <span [class]="'rank-badge rank-' + Math.min(i + 1, 4)">{{ i + 1 }}</span>
-              </td>
-              <td class="team-name-cell">
-                <div class="team-name-inner">
-                  <span class="hc-dot" [class]="t.hot_cold === 'on_fire' ? 'on-fire' : t.hot_cold"></span>
-                  <img class="team-logo" [src]="t.logo_url" [alt]="t.name" />
-                  <div class="team-label">
-                    <span class="lb-name">{{ t.name }}</span>
-                    <span class="team-abbr">{{ t.abbreviation }}</span>
-                  </div>
-                </div>
-              </td>
-              <td class="val-cell" [class.sorted]="teamSortBy === 'current'">{{ t.current_value_display }}</td>
-              <td class="val-cell season-val" [class.sorted]="teamSortBy === 'season'">{{ teamSeasonDisplay(t) }}</td>
-              <td class="form-cell hide-sm" [class.sorted]="teamSortBy === 'form'">
-                <div class="form-cell-inner">
-                  @if (t.hot_cold === 'on_fire') { <span class="hc-pill on-fire">🔥 On Fire</span> }
-                  @else if (t.hot_cold === 'hot') { <span class="hc-pill hot">↑ Hot</span> }
-                  @else if (t.hot_cold === 'cold') { <span class="hc-pill cold">↓ Cold</span> }
-                  @else if (t.hot_cold === 'slumping') { <span class="hc-pill slumping">❄️ Slump</span> }
-                  @else { <span class="hc-pill neutral">—</span> }
-                  <span class="form-delta" [class.positive]="teamFormDeltaPct(t) > 0" [class.negative]="teamFormDeltaPct(t) < 0">
-                    {{ teamFormDeltaDisplay(t) }} vs avg
                   </span>
                 </div>
               </td>

@@ -57,12 +57,14 @@ export class Home implements OnInit {
   triggerHint(name: string) { this.searchBar.setQuery(name); }
 
   goToLeaderboard(stat: string, view: 'players' | 'teams', pitcherType?: 'sp' | 'rp') {
+    if (view === 'teams') {
+      this.router.navigate(['/standings']);
+      return;
+    }
     const s = this.statsService.leaderboardPageState;
-    s.view         = view;
-    s.selectedStat = stat;
+    s.selectedStat  = stat;
     s.stretchLength = this.stretchLength;
     s.data          = null;
-    s.teamData      = null;
     if (pitcherType) s.pitcherType = pitcherType;
     this.router.navigate(['/leaderboard']);
   }

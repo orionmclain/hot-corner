@@ -188,6 +188,30 @@ export function rpDefaultLength(gamesPlayed: number): number {
   return 10;
 }
 
+export interface StandingTeam {
+  id: number;
+  name: string;
+  abbreviation: string;
+  logo_url: string;
+  wins: number;
+  losses: number;
+  pct: string;
+  gb: string;
+  streak: string;
+  last10: string;
+  run_diff: number;
+}
+
+export interface StandingsDivision {
+  name: string;
+  teams: StandingTeam[];
+}
+
+export interface StandingsData {
+  season: number;
+  divisions: StandingsDivision[];
+}
+
 export interface TeamPageState {
   hitterStat: string; hitterLength: number;
   spStat: string;     spLength: number;
@@ -199,16 +223,12 @@ export interface LeaderboardPageState {
   stretchLength: number;
   selectedStat: string;
   pitcherType: 'sp' | 'rp';
-  view: 'players' | 'teams';
   sortBy: 'current' | 'season' | 'best' | 'worst' | 'form';
   sortDir: 'natural' | 'reversed';
-  teamSortBy: 'current' | 'season' | 'form';
-  teamSortDir: 'natural' | 'reversed';
   searchQuery: string;
   selectedTeam: string;
   selectedPosition: string;
   data: LeaderboardData | null;
-  teamData: TeamLeaderboardData | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -229,14 +249,10 @@ export class StatsService {
     pitcherType: 'sp',
     sortBy: 'current',
     sortDir: 'natural',
-    view: 'players',
-    teamSortBy: 'current',
-    teamSortDir: 'natural',
     searchQuery: '',
     selectedTeam: '',
     selectedPosition: '',
     data: null,
-    teamData: null,
   };
 
   searchPlayers(q: string): Observable<PlayerSearchResult[]> {
@@ -307,6 +323,10 @@ export class StatsService {
     const params: any = { stat, length, season };
     if (pitcherType) params['pitcher_type'] = pitcherType;
     return this.http.get<TeamLeaderboardData>(`${this.apiUrl}/teams/leaderboard`, { params });
+  }
+
+  getStandings(season: number = new Date().getFullYear()): Observable<StandingsData> {
+    return this.http.get<StandingsData>(`${this.apiUrl}/standings`, { params: { season } });
   }
 
   getTeamRecord(teamId: number, season: number = new Date().getFullYear()): Observable<{ wins: number; losses: number; pct: string; gb: string; streak: string }> {

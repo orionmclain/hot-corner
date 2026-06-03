@@ -1,14 +1,14 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { StatsService, LeaderboardData, LeaderboardPlayer, TeamLeaderboardData, TeamLeaderboardEntry, hitterDefaultLength, spDefaultLength, rpDefaultLength } from '../../core/services/stats.service';
+import { StatsService, LeaderboardData, LeaderboardPlayer } from '../../core/services/stats.service';
 
 const PITCHING_STATS = new Set(['era', 'whip', 'k9', 'k', 'bb', 'er']);
 const LOWER_IS_BETTER = new Set(['era', 'whip', 'bb', 'er']);
 
 const DEFAULT_LENGTH: Record<string, number> = {
-  sp: 3,
-  rp: 3,
+  sp: 5,
+  rp: 5,
   hitter: 5,
 };
 
@@ -23,25 +23,17 @@ export class Leaderboard implements OnInit {
   private router = inject(Router);
 
   data: LeaderboardData | null = null;
-  teamData: TeamLeaderboardData | null = null;
   loading = false;
   error: string | null = null;
 
-  view: 'players' | 'teams' = 'players';
   season = new Date().getFullYear();
   stretchLength = 5;
   selectedStat = 'ops';
   pitcherType: 'sp' | 'rp' = 'sp';
 
-  // Player sort
   sortBy: 'current' | 'season' | 'best' | 'worst' | 'form' = 'current';
   sortDir: 'natural' | 'reversed' = 'natural';
 
-  // Team sort
-  teamSortBy: 'current' | 'season' | 'form' = 'current';
-  teamSortDir: 'natural' | 'reversed' = 'natural';
-
-  // Filters (player view only)
   searchQuery = '';
   selectedTeam = '';
   selectedPosition = '';
@@ -51,15 +43,12 @@ export class Leaderboard implements OnInit {
   private get savedState() { return this.statsService.leaderboardPageState; }
   private saveState() {
     Object.assign(this.savedState, {
-      view: this.view,
       season: this.season, stretchLength: this.stretchLength,
       selectedStat: this.selectedStat, pitcherType: this.pitcherType,
       sortBy: this.sortBy, sortDir: this.sortDir,
-      teamSortBy: this.teamSortBy, teamSortDir: this.teamSortDir,
       searchQuery: this.searchQuery, selectedTeam: this.selectedTeam,
       selectedPosition: this.selectedPosition,
       data: this.data,
-      teamData: this.teamData,
     });
   }
 
@@ -106,8 +95,6 @@ export class Leaderboard implements OnInit {
     return this.selectedStat.toUpperCase();
   }
 
-  // ── Player view ──────────────────────────────────────────────────────────────
-
   get availableTeams(): string[] {
     if (!this.data) return [];
     return [...new Set(this.data.players.map(p => p.team_abbreviation))].sort();
@@ -139,22 +126,6 @@ export class Leaderboard implements OnInit {
 
   formDeltaDisplay(p: LeaderboardPlayer): string {
     const pct = this.formDeltaPct(p);
-    return `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`;
-  }
-
-  teamSeasonDisplay(t: TeamLeaderboardEntry): string {
-    return this.isCountStat
-      ? (t.season_avg_display ?? '—')
-      : (t.season_value_display ?? '—');
-  }
-
-  teamFormDeltaPct(t: TeamLeaderboardEntry): number {
-    const base = this.isCountStat ? (t.season_avg_value ?? 0) : (t.season_value ?? 0);
-    return this.overperformance(t.current_value, base ?? 0);
-  }
-
-  teamFormDeltaDisplay(t: TeamLeaderboardEntry): string {
-    const pct = this.teamFormDeltaPct(t);
     return `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`;
   }
 
@@ -200,93 +171,30 @@ export class Leaderboard implements OnInit {
     }
   }
 
-  // ── Team view ────────────────────────────────────────────────────────────────
-
-  get sortedTeams(): TeamLeaderboardEntry[] {
-    if (!this.teamData) return [];
-    return [...this.teamData.entries].sort((a, b) => {
-      let av: number, bv: number;
-      let lowerBetter = LOWER_IS_BETTER.has(this.selectedStat);
-      const teamSeasonVal = (t: TeamLeaderboardEntry) =>
-        this.isCountStat ? (t.season_avg_value ?? 0) : (t.season_value ?? 0);
-      if (this.teamSortBy === 'current') {
-        av = a.current_value; bv = b.current_value;
-      } else if (this.teamSortBy === 'season') {
-        av = teamSeasonVal(a); bv = teamSeasonVal(b);
-      } else {
-        av = this.overperformance(a.current_value, teamSeasonVal(a));
-        bv = this.overperformance(b.current_value, teamSeasonVal(b));
-        lowerBetter = false;
-      }
-      const natural = lowerBetter ? av - bv : bv - av;
-      return this.teamSortDir === 'reversed' ? -natural : natural;
-    });
-  }
-
-  teamSortArrow(col: 'current' | 'season' | 'form'): string {
-    if (this.teamSortBy !== col) return '↕';
-    const naturalDown = col === 'form' ? true : !LOWER_IS_BETTER.has(this.selectedStat);
-    const showDown = this.teamSortDir === 'natural' ? naturalDown : !naturalDown;
-    return showDown ? '↓' : '↑';
-  }
-
-  sortTeam(col: 'current' | 'season' | 'form') {
-    if (this.teamSortBy === col) {
-      this.teamSortDir = this.teamSortDir === 'natural' ? 'reversed' : 'natural';
-    } else {
-      this.teamSortBy = col;
-      this.teamSortDir = 'natural';
-    }
-  }
-
-  setView(v: 'players' | 'teams') {
-    if (this.view === v) return;
-    this.view = v;
-    if (v === 'teams' && !this.teamData) this.loadTeams();
-    if (v === 'players' && !this.data) this.loadPlayers();
-  }
-
-  // ── Lifecycle ────────────────────────────────────────────────────────────────
-
   ngOnInit() {
     const s = this.savedState;
-    if (s.data || s.teamData) {
-      ({ view: this.view, season: this.season, stretchLength: this.stretchLength,
+    if (s.data) {
+      ({ season: this.season, stretchLength: this.stretchLength,
          selectedStat: this.selectedStat, pitcherType: this.pitcherType,
          sortBy: this.sortBy, sortDir: this.sortDir,
-         teamSortBy: this.teamSortBy, teamSortDir: this.teamSortDir,
          searchQuery: this.searchQuery, selectedTeam: this.selectedTeam,
          selectedPosition: this.selectedPosition,
-         data: this.data, teamData: this.teamData } = s);
+         data: this.data } = s);
       return;
     }
 
-    this.view = s.view;
     this.selectedStat = s.selectedStat;
     this.pitcherType = s.pitcherType;
 
-    if (this.season === new Date().getFullYear()) {
-      this.statsService.getDefaultLength(this.season).subscribe({
-        next: ({ games_played }) => {
-          DEFAULT_LENGTH['hitter'] = hitterDefaultLength(games_played);
-          DEFAULT_LENGTH['sp']     = spDefaultLength(games_played);
-          DEFAULT_LENGTH['rp']     = rpDefaultLength(games_played);
-          this.stretchLength = PITCHING_STATS.has(this.selectedStat)
-            ? DEFAULT_LENGTH[this.pitcherType]
-            : DEFAULT_LENGTH['hitter'];
-          this.load();
-        },
-        error: () => { this.load(); },
-      });
-    } else {
-      this.load();
-    }
+    this.stretchLength = PITCHING_STATS.has(this.selectedStat)
+      ? DEFAULT_LENGTH[this.pitcherType]
+      : DEFAULT_LENGTH['hitter'];
+    this.load();
   }
 
   selectStat(stat: string) {
     this.selectedStat = stat;
     this.sortDir = 'natural';
-    this.teamSortDir = 'natural';
     this.selectedPosition = '';
     if (PITCHING_STATS.has(stat)) {
       this.stretchLength = DEFAULT_LENGTH[this.pitcherType];
@@ -304,33 +212,13 @@ export class Leaderboard implements OnInit {
 
   load() {
     this.savedState.data = null;
-    this.savedState.teamData = null;
     this.data = null;
-    this.teamData = null;
-    if (this.view === 'teams') {
-      this.loadTeams();
-    } else {
-      this.loadPlayers();
-    }
-  }
-
-  private loadPlayers() {
     this.loading = true;
     this.error = null;
     const pt = this.isPitchingStat ? this.pitcherType : undefined;
     this.statsService.getLeaderboard(this.selectedStat, this.stretchLength, this.season, pt).subscribe({
       next: (d) => { this.data = d; this.loading = false; },
       error: (err) => { this.error = err.error?.detail ?? 'Failed to load leaderboard.'; this.loading = false; },
-    });
-  }
-
-  private loadTeams() {
-    this.loading = true;
-    this.error = null;
-    const pt = this.isPitchingStat ? this.pitcherType : undefined;
-    this.statsService.getTeamLeaderboard(this.selectedStat, this.stretchLength, this.season, pt).subscribe({
-      next: (d) => { this.teamData = d; this.loading = false; },
-      error: (err) => { this.error = err.error?.detail ?? 'Failed to load team leaderboard.'; this.loading = false; },
     });
   }
 
@@ -349,10 +237,5 @@ export class Leaderboard implements OnInit {
   goToPlayer(p: LeaderboardPlayer) {
     this.saveState();
     this.router.navigate(['/player', p.player_id]);
-  }
-
-  goToTeam(t: TeamLeaderboardEntry) {
-    this.saveState();
-    this.router.navigate(['/team', t.team_id]);
   }
 }

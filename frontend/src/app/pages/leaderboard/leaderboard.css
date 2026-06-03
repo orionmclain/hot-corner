@@ -139,7 +139,7 @@
 }
 
 .lb-table thead th {
-  padding: 12px 16px;
+  padding: 8px 16px;
   text-align: left;
   font-size: 11px;
   font-weight: 600;
@@ -156,7 +156,7 @@
 }
 .lb-row:hover td { background: var(--bg-card-hover); }
 .lb-row td {
-  padding: 12px 16px;
+  padding: 5px 16px;
   border-bottom: 1px solid var(--bg-overlay);
   color: var(--text-secondary);
   vertical-align: middle;
@@ -263,6 +263,9 @@
 /* ── Mobile collapsible filters ── */
 .controls-mobile-header { display: none; }
 .controls-body { display: contents; }
+.slider-always { display: contents; }
+.controls-stat-chip { display: none; }
+.controls-inline-slider { display: none; }
 
 .controls-toggle {
   display: inline-flex;
@@ -314,8 +317,8 @@
 }
 
 .lb-thumb {
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   object-fit: cover;
   background: var(--bg-card);
@@ -345,12 +348,13 @@
 .spin { animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-.form-cell { text-align: center; }
+.form-cell { text-align: left; }
 .form-cell-inner {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
+  white-space: nowrap;
 }
 
 .form-delta {
@@ -414,32 +418,109 @@
   .hide-sm { display: none; }
 
   .controls-bar {
+    position: sticky;
     flex-direction: column;
     align-items: stretch;
     gap: 0;
     padding: 12px 16px;
-    top: 0;
+    top: 56px;
   }
 
   .controls-mobile-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 12px;
+    gap: 8px;
   }
+
+  .controls-stat-chip {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  .controls-inline-slider {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .controls-inline-slider .range-input {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+  }
+
+  .slider-always { display: none; }
 
   .controls-body {
     display: none;
     flex-direction: column;
     gap: 16px;
     padding-top: 16px;
-    margin-top: 12px;
+    margin-top: 4px;
     border-top: 1px solid var(--border);
   }
 
   .controls-body.open { display: flex; }
 
-  .leaderboard-page { padding: 16px 12px 48px; gap: 12px; }
+  .leaderboard-page { padding: 16px 8px 48px; gap: 12px; }
 
   .range-input { width: 100px; }
+
+  /* ── Scrollable table ── */
+  .lb-table-card {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .lb-table {
+    min-width: 600px;
+    font-size: 13px;
+  }
+
+  .lb-table thead th {
+    padding: 10px 8px;
+    font-size: 10px;
+  }
+
+  .lb-row td {
+    padding: 8px 8px;
+  }
+
+  /* Sticky rank column */
+  .lb-table thead th:first-child,
+  .lb-table tbody td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 3;
+    background: var(--bg-secondary);
+  }
+  .lb-row:hover td:first-child { background: var(--bg-card-hover); }
+
+  /* Sticky player column */
+  .lb-table thead th:nth-child(2),
+  .lb-table tbody td:nth-child(2) {
+    position: sticky;
+    left: 44px;
+    z-index: 2;
+    background: var(--bg-secondary);
+    box-shadow: 2px 0 6px rgba(0, 0, 0, 0.3);
+  }
+  .lb-row:hover td:nth-child(2) { background: var(--bg-card-hover); }
+
+  /* Smaller avatar */
+  .lb-thumb { width: 28px; height: 28px; }
+
+  /* Hide dates in stretch cells — too small to be useful */
+  .stretch-dates { display: none; }
+
+  /* Keep name on one line */
+  .lb-name { white-space: nowrap; }
+
+  .val-cell { font-size: 13px; }
+  .val-cell.season-val { font-size: 12px; }
 }

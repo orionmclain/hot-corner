@@ -1,0 +1,278 @@
+<div class="standings-page">
+
+  <!-- ── Page header ── -->
+  <div class="standings-header">
+    <h1 class="page-title">Teams</h1>
+    <div class="header-right">
+      <select class="season-select" [(ngModel)]="season" (change)="onSeasonChange()">
+        @for (yr of seasons; track yr) { <option [value]="yr">{{ yr }}</option> }
+      </select>
+      <div class="view-tabs">
+        <button class="view-tab" [class.active]="tabView === 'standings'" (click)="setTab('standings')">Standings</button>
+        <button class="view-tab" [class.active]="tabView === 'leaderboard'" (click)="setTab('leaderboard')">Leaderboard</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- ── STANDINGS VIEW ── -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  @if (tabView === 'standings') {
+
+    @if (standingsLoading) {
+      <div class="loading-state">
+        <svg class="spin" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5">
+          <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+        </svg>
+      </div>
+    } @else if (standingsError) {
+      <div class="error-state">⚠️ {{ standingsError }}</div>
+    } @else if (standingsData) {
+
+      <!-- Stretch slider for OPS / ERA columns -->
+      <div class="stretch-bar">
+        <span class="stretch-label">OPS / ERA Stretch</span>
+        <div class="slider-row">
+          <span class="slider-bound">5G</span>
+          <input class="range-input" type="range" min="5" max="50" step="1"
+            [(ngModel)]="stretchLength" (change)="loadStretchStats()" />
+          <span class="slider-bound">50G</span>
+          <strong class="slider-val">{{ stretchLength }}G</strong>
+        </div>
+        @if (stretchStatsLoading) {
+          <svg class="spin-sm" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+          </svg>
+        }
+      </div>
+
+      <!-- American League -->
+      <div class="league-block al">
+        <div class="league-label">American League</div>
+        <div class="league-grid">
+          @for (div of alDivisions; track div.name) {
+            <div class="division-card">
+              <div class="division-title">{{ shortDivName(div.name) }}</div>
+              <table class="standings-table">
+                <thead>
+                  <tr>
+                    <th class="th-team">Team</th>
+                    <th class="th-num">W</th>
+                    <th class="th-num">L</th>
+                    <th class="th-num hide-sm">PCT</th>
+                    <th class="th-num">GB</th>
+                    <th class="th-num hide-sm">L10</th>
+                    <th class="th-num">OPS</th>
+                    <th class="th-num">ERA</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (team of div.teams; track team.id; let first = $first) {
+                    <tr class="team-row" [class.leader]="first" (click)="goToTeam(team.id)">
+                      <td class="td-team">
+                        <div class="team-cell-inner">
+                          <img class="team-logo-sm" [src]="team.logo_url" [alt]="team.abbreviation" />
+                          <span class="team-abbr">{{ team.abbreviation }}</span>
+                          <span class="team-name-full">{{ team.name }}</span>
+                        </div>
+                      </td>
+                      <td class="td-num bold">{{ team.wins }}</td>
+                      <td class="td-num">{{ team.losses }}</td>
+                      <td class="td-num dim hide-sm">{{ team.pct }}</td>
+                      <td class="td-num dim">{{ team.gb }}</td>
+                      <td class="td-num hide-sm">{{ team.last10 }}</td>
+                      <td [class]="'td-num stat-val ' + statClass(stretchStatsMap[team.id]?.opsHot ?? 'neutral')">
+                        {{ stretchStatsMap[team.id]?.ops ?? '—' }}
+                      </td>
+                      <td [class]="'td-num stat-val ' + statClass(stretchStatsMap[team.id]?.eraHot ?? 'neutral')">
+                        {{ stretchStatsMap[team.id]?.era ?? '—' }}
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- National League -->
+      <div class="league-block nl">
+        <div class="league-label">National League</div>
+        <div class="league-grid">
+          @for (div of nlDivisions; track div.name) {
+            <div class="division-card">
+              <div class="division-title">{{ shortDivName(div.name) }}</div>
+              <table class="standings-table">
+                <thead>
+                  <tr>
+                    <th class="th-team">Team</th>
+                    <th class="th-num">W</th>
+                    <th class="th-num">L</th>
+                    <th class="th-num hide-sm">PCT</th>
+                    <th class="th-num">GB</th>
+                    <th class="th-num hide-sm">L10</th>
+                    <th class="th-num">OPS</th>
+                    <th class="th-num">ERA</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (team of div.teams; track team.id; let first = $first) {
+                    <tr class="team-row" [class.leader]="first" (click)="goToTeam(team.id)">
+                      <td class="td-team">
+                        <div class="team-cell-inner">
+                          <img class="team-logo-sm" [src]="team.logo_url" [alt]="team.abbreviation" />
+                          <span class="team-abbr">{{ team.abbreviation }}</span>
+                          <span class="team-name-full">{{ team.name }}</span>
+                        </div>
+                      </td>
+                      <td class="td-num bold">{{ team.wins }}</td>
+                      <td class="td-num">{{ team.losses }}</td>
+                      <td class="td-num dim hide-sm">{{ team.pct }}</td>
+                      <td class="td-num dim">{{ team.gb }}</td>
+                      <td class="td-num hide-sm">{{ team.last10 }}</td>
+                      <td [class]="'td-num stat-val ' + statClass(stretchStatsMap[team.id]?.opsHot ?? 'neutral')">
+                        {{ stretchStatsMap[team.id]?.ops ?? '—' }}
+                      </td>
+                      <td [class]="'td-num stat-val ' + statClass(stretchStatsMap[team.id]?.eraHot ?? 'neutral')">
+                        {{ stretchStatsMap[team.id]?.era ?? '—' }}
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+      </div>
+
+    }
+  }
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- ── LEADERBOARD VIEW ── -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  @if (tabView === 'leaderboard') {
+
+    <!-- Controls — sticky, collapsible on mobile, matches player leaderboard pattern -->
+    <div class="lb-controls-bar">
+
+      <!-- Mobile header: always visible -->
+      <div class="lb-controls-mobile-header">
+        <span class="lb-stat-chip">{{ selectedStatLabel }}</span>
+        <div class="slider-row lb-inline-slider">
+          <span class="slider-bound">{{ isPitchingStat ? 3 : 5 }}</span>
+          <input class="range-input" type="range" [min]="isPitchingStat ? 3 : 5" max="50" step="1"
+            [(ngModel)]="lbStretchLength" (change)="loadTeamLeaderboard()" />
+          <span class="slider-bound">50</span>
+          <strong class="slider-val">{{ lbStretchLength }}G</strong>
+        </div>
+        <button class="controls-toggle" (click)="lbFiltersOpen = !lbFiltersOpen">
+          Filters
+          <svg class="toggle-chevron" [class.open]="lbFiltersOpen" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="m6 9 6 6 6-6"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Desktop slider: always visible on desktop -->
+      <div class="lb-slider-always">
+        <div class="slider-row">
+          <span class="slider-bound">{{ isPitchingStat ? 3 : 5 }}</span>
+          <input class="range-input" type="range" [min]="isPitchingStat ? 3 : 5" max="50" step="1"
+            [(ngModel)]="lbStretchLength" (change)="loadTeamLeaderboard()" />
+          <span class="slider-bound">50</span>
+          <strong class="slider-val">{{ lbStretchLength }}G</strong>
+        </div>
+      </div>
+
+      <!-- Collapsible body: stat tabs + pitcher type -->
+      <div class="lb-controls-body" [class.open]="lbFiltersOpen">
+        <div class="lb-stat-group">
+          @for (group of statGroups; track group.label) {
+            @for (opt of group.options; track opt.value) {
+              <button class="stat-tab" [class.active]="selectedStat === opt.value"
+                (click)="selectStat(opt.value)">{{ opt.label }}</button>
+            }
+            @if (!$last) { <span class="stat-divider"></span> }
+          }
+        </div>
+        @if (isPitchingStat) {
+          <div class="pitcher-tabs">
+            <button class="pitcher-tab" [class.active]="pitcherType === 'sp'" (click)="selectPitcherType('sp')">SP</button>
+            <button class="pitcher-tab" [class.active]="pitcherType === 'rp'" (click)="selectPitcherType('rp')">RP</button>
+          </div>
+        }
+      </div>
+
+    </div>
+
+    <!-- Team table — matches player leaderboard UI exactly -->
+    <div class="lb-table-card">
+      @if (lbLoading) {
+        <div class="lb-loading">
+          <svg class="spin" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5">
+            <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+          </svg>
+          <span>Loading team stats…</span>
+        </div>
+      } @else if (lbError) {
+        <div class="lb-error">⚠️ {{ lbError }}</div>
+      } @else if (teamData) {
+        <table class="lb-table">
+          <thead>
+            <tr>
+              <th class="rank-col">#</th>
+              <th>Team</th>
+              <th class="val-col sortable" [class.sorted]="lbSortBy === 'current'" (click)="sortTeam('current')">
+                Last {{ teamData.stretch_length }}G <span class="sort-arrow">{{ sortArrow('current') }}</span>
+              </th>
+              <th class="val-col sortable" [class.sorted]="lbSortBy === 'season'" (click)="sortTeam('season')">
+                {{ isCountStat ? 'Avg/' + teamData.stretch_length + 'G' : 'Season Avg' }}
+                <span class="sort-arrow">{{ sortArrow('season') }}</span>
+              </th>
+              <th class="sortable" [class.sorted]="lbSortBy === 'form'" (click)="sortTeam('form')">
+                Form <span class="sort-arrow">{{ sortArrow('form') }}</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (t of sortedTeams; track t.team_id; let i = $index) {
+              <tr class="lb-row" (click)="goToTeam(t.team_id)">
+                <td class="rank-cell">
+                  <span [class]="'rank-badge rank-' + Math.min(i + 1, 4)">{{ i + 1 }}</span>
+                </td>
+                <td class="player-cell">
+                  <div class="player-cell-inner">
+                    <span class="hc-dot" [class]="t.hot_cold === 'on_fire' ? 'on-fire' : t.hot_cold"></span>
+                    <img class="team-logo" [src]="t.logo_url" [alt]="t.name" />
+                    <div class="team-label">
+                      <span class="lb-name">{{ t.name }}</span>
+                      <span class="team-abbr-sm">{{ t.abbreviation }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="val-cell" [class.sorted]="lbSortBy === 'current'">{{ t.current_value_display }}</td>
+                <td class="val-cell season-val" [class.sorted]="lbSortBy === 'season'">{{ teamSeasonDisplay(t) }}</td>
+                <td class="form-cell" [class.sorted]="lbSortBy === 'form'">
+                  <div class="form-cell-inner">
+                    @if (t.hot_cold === 'on_fire') { <span class="hc-pill on-fire">🔥 On Fire</span> }
+                    @else if (t.hot_cold === 'hot') { <span class="hc-pill hot">↑ Hot</span> }
+                    @else if (t.hot_cold === 'cold') { <span class="hc-pill cold">↓ Cold</span> }
+                    @else if (t.hot_cold === 'slumping') { <span class="hc-pill slumping">❄️ Slump</span> }
+                    @else { <span class="hc-pill neutral">—</span> }
+                    <span class="form-delta" [class.positive]="formPct(t) > 0" [class.negative]="formPct(t) < 0">
+                      {{ formDeltaDisplay(t) }} vs avg
+                    </span>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+
+  }
+
+</div>
