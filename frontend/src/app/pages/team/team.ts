@@ -49,9 +49,9 @@ export class Team implements OnInit, OnDestroy {
   error: string | null = null;
 
   // Per-section roster controls
-  hitterStat = 'ops';  hitterLength = 10;
+  hitterStat = 'ops';  hitterLength = 5;
   spStat     = 'era';  spLength     = 5;
-  rpStat     = 'whip'; rpLength     = 10;
+  rpStat     = 'whip'; rpLength     = 5;
 
   // Team performance chart
   @ViewChild('teamChartCanvas') teamChartCanvas!: ElementRef<HTMLCanvasElement>;
@@ -60,7 +60,7 @@ export class Team implements OnInit, OnDestroy {
   chartLoading = false;
   chartError: string | null = null;
   chartStat = 'ops';
-  chartLength = 10;
+  chartLength = 5;
   chartSeason = new Date().getFullYear();
   chartMode: 'offense' | 'pitching' = 'offense';
 

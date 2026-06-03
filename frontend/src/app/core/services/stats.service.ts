@@ -173,19 +173,17 @@ export interface LeaderboardData {
 }
 
 export function hitterDefaultLength(gamesPlayed: number): number {
-  if (gamesPlayed < 30) return 5;
-  if (gamesPlayed < 60) return 10;
-  return 15;
+  return 5;
 }
 
 export function spDefaultLength(gamesPlayed: number): number {
-  return gamesPlayed < 50 ? 3 : 5;
+  if (gamesPlayed < 30) return 3;
+  return 5;
 }
 
 export function rpDefaultLength(gamesPlayed: number): number {
   if (gamesPlayed < 30) return 3;
-  if (gamesPlayed < 60) return 5;
-  return 10;
+  return 5;
 }
 
 export interface StandingTeam {
@@ -237,9 +235,9 @@ export class StatsService {
   private apiUrl = environment.apiUrl;
 
   teamPageState: TeamPageState = {
-    hitterStat: 'ops', hitterLength: 10,
+    hitterStat: 'ops', hitterLength: 5,
     spStat: 'era',     spLength: 5,
-    rpStat: 'whip',    rpLength: 10,
+    rpStat: 'whip',    rpLength: 5,
   };
 
   leaderboardPageState: LeaderboardPageState = {
@@ -285,11 +283,11 @@ export class StatsService {
   ): Observable<RosterPlayer[]> {
     const params: any = {
       hitter_stat:   opts.hitterStat   ?? 'ops',
-      hitter_length: opts.hitterLength ?? 10,
+      hitter_length: opts.hitterLength ?? 5,
       sp_stat:       opts.spStat       ?? 'era',
       sp_length:     opts.spLength     ?? 5,
       rp_stat:       opts.rpStat       ?? 'whip',
-      rp_length:     opts.rpLength     ?? 10,
+      rp_length:     opts.rpLength     ?? 5,
     };
     if (opts.season) params['season'] = opts.season;
     return this.http.get<RosterPlayer[]>(`${this.apiUrl}/teams/${teamId}/hot-cold`, { params });
