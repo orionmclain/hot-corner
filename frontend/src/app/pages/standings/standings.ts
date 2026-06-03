@@ -35,7 +35,7 @@ export class Standings implements OnInit {
   standingsError: string | null = null;
 
   // Stretch stats for OPS/ERA columns
-  stretchLength = 15;
+  stretchLength = 5;
   stretchStatsMap: Record<number, StretchStat> = {};
   stretchStatsLoading = false;
 
@@ -44,7 +44,7 @@ export class Standings implements OnInit {
   lbLoading = false;
   lbError: string | null = null;
   selectedStat = 'ops';
-  lbStretchLength = 15;
+  lbStretchLength = 5;
   pitcherType: 'sp' | 'rp' = 'sp';
   lbSortBy: 'current' | 'season' | 'form' = 'current';
   lbSortDir: 'natural' | 'reversed' = 'natural';
