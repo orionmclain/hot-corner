@@ -1,11 +1,13 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.gzip import GZipMiddleware
 from cachetools import TTLCache
 from threading import Lock
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import re
+import random
 import requests
 import math
 import logging
@@ -56,19 +58,16 @@ async def lifespan(app: FastAPI):
 
         default_len = _season_default_length(CURRENT_YEAR)
         for kwargs in [
-            {
-                "stat": "ops",
-                "length": default_len,
-                "season": CURRENT_YEAR,
-                "pitcher_type": None,
-            },
-            {"stat": "era", "length": 5, "season": CURRENT_YEAR, "pitcher_type": "sp"},
-            {
-                "stat": "whip",
-                "length": 10,
-                "season": CURRENT_YEAR,
-                "pitcher_type": "rp",
-            },
+            # Most-visited hitter views
+            {"stat": "ops",  "length": default_len, "season": CURRENT_YEAR, "pitcher_type": None},
+            {"stat": "avg",  "length": default_len, "season": CURRENT_YEAR, "pitcher_type": None},
+            {"stat": "hr",   "length": default_len, "season": CURRENT_YEAR, "pitcher_type": None},
+            # Most-visited SP views
+            {"stat": "era",  "length": 5,           "season": CURRENT_YEAR, "pitcher_type": "sp"},
+            {"stat": "k9",   "length": 5,           "season": CURRENT_YEAR, "pitcher_type": "sp"},
+            # Most-visited RP views
+            {"stat": "whip", "length": 5,           "season": CURRENT_YEAR, "pitcher_type": "rp"},
+            {"stat": "k",    "length": 5,           "season": CURRENT_YEAR, "pitcher_type": "rp"},
         ]:
             try:
                 get_leaderboard(**kwargs)
@@ -93,6 +92,41 @@ app.add_middleware(
     allow_methods=["GET"],
     allow_headers=["*"],
 )
+
+_PLAYER_ID_RE = re.compile(r"^/players/\d+$")
+
+@app.middleware("http")
+async def add_cache_headers(request: Request, call_next):
+    response = await call_next(request)
+    path = request.url.path
+    if path == "/health":
+        cc = "no-store"
+    elif path == "/teams":
+        cc = "max-age=86400, public"          # team list: season-stable
+    elif path.startswith("/teams/leaderboard"):
+        cc = "max-age=1800, public"
+    elif path.endswith("/hot-cold"):
+        cc = "max-age=900, public"             # matches _hot_cold_cache TTL
+    elif path.endswith("/record"):
+        cc = "max-age=300, public"             # matches _record_cache TTL
+    elif path.startswith("/teams/"):
+        cc = "max-age=1800, public"            # roster, stretches, wins
+    elif path.startswith("/players/search"):
+        cc = "max-age=300, public"
+    elif _PLAYER_ID_RE.match(path):
+        cc = "max-age=86400, public"           # player bio: daily-stable
+    elif path.startswith("/players/"):
+        cc = "max-age=1800, public"            # stretches, game-log
+    elif path.startswith("/leaderboard"):
+        cc = "max-age=1800, public"
+    elif path.startswith("/standings"):
+        cc = "max-age=300, public"
+    elif path.startswith("/season/"):
+        cc = "max-age=3600, public"
+    else:
+        cc = "no-store"
+    response.headers["Cache-Control"] = cc
+    return response
 
 MLB_API_BASE = "https://statsapi.mlb.com/api/v1"
 CURRENT_YEAR = datetime.now().year
@@ -140,17 +174,24 @@ LEADERBOARD_CONFIG = {
 }
 
 # ── Caches ────────────────────────────────────────────────────────────────────
-_search_cache: TTLCache = TTLCache(maxsize=200, ttl=300)
-_player_cache: TTLCache = TTLCache(maxsize=500, ttl=86400)
-_gamelog_cache: TTLCache = TTLCache(maxsize=1000, ttl=3600)
-_teams_cache: TTLCache = TTLCache(maxsize=5, ttl=86400)
-_roster_cache: TTLCache = TTLCache(maxsize=60, ttl=3600)
-_leaderboard_cache: TTLCache = TTLCache(maxsize=50, ttl=3600)
-_team_gamelog_cache: TTLCache = TTLCache(maxsize=60, ttl=3600)
-_team_wins_cache: TTLCache = TTLCache(maxsize=60, ttl=3600)
-_standings_cache: TTLCache = TTLCache(maxsize=10, ttl=1800)
-_team_lb_cache: TTLCache = TTLCache(maxsize=50, ttl=3600)
-_record_cache: TTLCache = TTLCache(maxsize=60, ttl=300)
+# Add ±10 % jitter to each TTL so caches don't all expire in lockstep after a
+# cold start. The seed is fixed per-process so values are stable until restart.
+def _jitter(ttl: int) -> int:
+    delta = max(1, ttl // 10)
+    return ttl + random.randint(-delta, delta)
+
+_search_cache: TTLCache = TTLCache(maxsize=200,  ttl=_jitter(300))
+_player_cache: TTLCache = TTLCache(maxsize=500,  ttl=_jitter(86400))
+_gamelog_cache: TTLCache = TTLCache(maxsize=1000, ttl=_jitter(3600))
+_teams_cache: TTLCache = TTLCache(maxsize=5,    ttl=_jitter(86400))
+_roster_cache: TTLCache = TTLCache(maxsize=60,   ttl=_jitter(3600))
+_leaderboard_cache: TTLCache = TTLCache(maxsize=50,   ttl=_jitter(3600))
+_team_gamelog_cache: TTLCache = TTLCache(maxsize=60,   ttl=_jitter(3600))
+_team_wins_cache: TTLCache = TTLCache(maxsize=60,   ttl=_jitter(3600))
+_standings_cache: TTLCache = TTLCache(maxsize=10,   ttl=_jitter(1800))
+_team_lb_cache: TTLCache = TTLCache(maxsize=50,   ttl=_jitter(3600))
+_record_cache: TTLCache = TTLCache(maxsize=60,   ttl=_jitter(300))
+_hot_cold_cache: TTLCache = TTLCache(maxsize=120,  ttl=_jitter(900))
 _lock = Lock()
 
 DIVISION_ORDER = [
@@ -965,6 +1006,11 @@ def get_team_hot_cold(
     rp_stat: str = Query("whip"),
     rp_length: int = Query(10, ge=3, le=60),
 ):
+    cache_key = (team_id, season, hitter_stat, hitter_length, sp_stat, sp_length, rp_stat, rp_length)
+    with _lock:
+        if cache_key in _hot_cold_cache:
+            return _hot_cold_cache[cache_key]
+
     roster_data = get_roster(team_id, season)
     players = roster_data["players"]
 
@@ -1027,7 +1073,10 @@ def get_team_hot_cold(
             if r:
                 results.append(r)
 
-    return sorted(results, key=lambda p: p["name"])
+    sorted_results = sorted(results, key=lambda p: p["name"])
+    with _lock:
+        _hot_cold_cache[cache_key] = sorted_results
+    return sorted_results
 
 
 @app.get("/teams/{team_id}/stretches")
@@ -1205,6 +1254,15 @@ def get_leaderboard(
                     "headshot": f"https://img.mlbstatic.com/mlb-photos/image/upload/d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/{pid}/headshot/67/current",
                 }
             )
+
+    # Deduplicate by player_id — DB can return a player twice on mid-season trades
+    seen_pids: set[int] = set()
+    unique_candidates: list[dict] = []
+    for c in candidates:
+        if c["player_id"] not in seen_pids:
+            seen_pids.add(c["player_id"])
+            unique_candidates.append(c)
+    candidates = unique_candidates
 
     def compute_player_entry(c: dict):
         pid = c["player_id"]

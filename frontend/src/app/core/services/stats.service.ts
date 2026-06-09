@@ -172,7 +172,7 @@ export interface LeaderboardData {
   players: LeaderboardPlayer[];
 }
 
-export function hitterDefaultLength(gamesPlayed: number): number {
+export function hitterDefaultLength(_gamesPlayed: number): number {
   return 5;
 }
 
@@ -216,16 +216,32 @@ export interface TeamPageState {
   rpStat: string;     rpLength: number;
 }
 
+export interface StandingsPageState {
+  tabView: 'standings' | 'leaderboard';
+  season: number;
+  stretchLength: number;
+  lbSelectedStat: string;
+  lbStretchLength: number;
+  pitcherType: 'sp' | 'rp' | null;
+  selectedLeague: string;
+  selectedDivision: string;
+  lbSortBy: 'current' | 'season' | 'form';
+  lbSortDir: 'natural' | 'reversed';
+  teamData: TeamLeaderboardData | null;
+}
+
 export interface LeaderboardPageState {
   season: number;
   stretchLength: number;
   selectedStat: string;
   pitcherType: 'sp' | 'rp';
-  sortBy: 'current' | 'season' | 'best' | 'worst' | 'form';
+  sortBy: 'current' | 'season' | 'best' | 'worst' | 'form' | 'streak';
   sortDir: 'natural' | 'reversed';
   searchQuery: string;
   selectedTeam: string;
   selectedPosition: string;
+  selectedLeague: string;
+  selectedDivision: string;
   data: LeaderboardData | null;
 }
 
@@ -240,6 +256,20 @@ export class StatsService {
     rpStat: 'whip',    rpLength: 5,
   };
 
+  standingsPageState: StandingsPageState = {
+    tabView: 'standings',
+    season: new Date().getFullYear(),
+    stretchLength: 5,
+    lbSelectedStat: 'ops',
+    lbStretchLength: 5,
+    pitcherType: null,
+    selectedLeague: '',
+    selectedDivision: '',
+    lbSortBy: 'current',
+    lbSortDir: 'natural',
+    teamData: null,
+  };
+
   leaderboardPageState: LeaderboardPageState = {
     season: new Date().getFullYear(),
     stretchLength: 15,
@@ -250,6 +280,8 @@ export class StatsService {
     searchQuery: '',
     selectedTeam: '',
     selectedPosition: '',
+    selectedLeague: '',
+    selectedDivision: '',
     data: null,
   };
 

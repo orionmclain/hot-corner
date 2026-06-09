@@ -44,32 +44,28 @@ class DatabaseUnavailable(Exception):
     pass
 
 
-_pool = None
+@contextmanager
+def _get_conn():
+    """Open a fresh connection for each call.
 
-
-def _get_pool():
-    global _pool
-    if _pool is not None:
-        return _pool
+    Neon's free tier aggressively closes idle connections, which silently
+    corrupts pooled connections. Fresh-per-call connections are immune to
+    this — and with the app's in-memory caching the DB is rarely reached.
+    """
     if not DATABASE_URL:
         raise DatabaseUnavailable("DATABASE_URL not set")
     try:
-        from psycopg2.pool import ThreadedConnectionPool
-
-        _pool = ThreadedConnectionPool(minconn=2, maxconn=20, dsn=DATABASE_URL)
-        return _pool
+        import psycopg2
+        conn = psycopg2.connect(DATABASE_URL, connect_timeout=10)
     except Exception as e:
         raise DatabaseUnavailable(str(e)) from e
-
-
-@contextmanager
-def _get_conn():
-    pool = _get_pool()
-    conn = pool.getconn()
     try:
         yield conn
     finally:
-        pool.putconn(conn)
+        try:
+            conn.close()
+        except Exception:
+            pass
 
 
 # ── Game logs ──────────────────────────────────────────────────────────────────

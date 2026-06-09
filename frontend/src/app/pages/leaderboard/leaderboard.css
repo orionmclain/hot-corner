@@ -45,16 +45,15 @@
 }
 .lb-sub { font-size: 14px; color: var(--text-secondary); }
 
-/* Controls — reuse player page patterns */
+/* Controls */
 .controls-bar {
   display: flex;
-  align-items: flex-end;
-  gap: 20px;
+  flex-direction: column;
+  gap: 0;
   padding: 16px 24px;
   background: var(--bg-primary-glass);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  flex-wrap: wrap;
   position: sticky;
   top: 56px;
   z-index: 50;
@@ -259,11 +258,76 @@
 .pitcher-tab:hover:not(.active) { border-color: var(--accent); color: var(--text-primary); }
 
 .hide-sm { }
+.streak-col { text-align: center; min-width: 70px; }
+.streak-cell {
+  text-align: center;
+  vertical-align: middle;
+}
+.streak-cell .cv-bar-track { width: 52px; margin: 0 auto 3px; }
+.streak-cell .cv-label { font-size: 11px; color: var(--text-muted); }
 
-/* ── Mobile collapsible filters ── */
+/* ── Controls layout ── */
 .controls-mobile-header { display: none; }
-.controls-body { display: contents; }
-.slider-always { display: contents; }
+
+.controls-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.controls-top-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.slider-group { flex-shrink: 0; }
+
+.stat-sections {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  width: 100%;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.stat-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+.stat-sections .stat-tab { flex: 1; justify-content: center; }
+
+.stat-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+
+/* Filter row: Position · League · Division · Team — each takes equal width */
+.controls-filter-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+.controls-filter-row .control-group { flex: 1; min-width: 80px; }
+.controls-filter-row .control-select { width: 100%; }
+
+/* Top row proportions: slider 50% · search 35% · season 15% */
+.controls-top-row .slider-group { flex: 10; }
+.controls-top-row .slider-group .range-input { flex: 1; width: auto; min-width: 80px; }
+.controls-top-row .search-group  { flex: 7; }
+.controls-top-row .search-input  { width: 100%; }
+.controls-top-row .season-group  { flex: 3; }
+.controls-top-row .season-group .control-select { width: 100%; }
+
 .controls-stat-chip { display: none; }
 .controls-inline-slider { display: none; }
 
@@ -418,12 +482,7 @@
   .hide-sm { display: none; }
 
   .controls-bar {
-    position: sticky;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0;
     padding: 12px 16px;
-    top: 56px;
   }
 
   .controls-mobile-header {
@@ -447,25 +506,23 @@
     flex: 1;
     min-width: 0;
   }
+  .controls-inline-slider .range-input { flex: 1; min-width: 0; width: auto; }
 
-  .controls-inline-slider .range-input {
-    flex: 1;
-    min-width: 0;
-    width: auto;
-  }
-
-  .slider-always { display: none; }
+  /* Slider in controls-top-row is hidden on mobile (use mobile header slider) */
+  .slider-group { display: none; }
 
   .controls-body {
     display: none;
-    flex-direction: column;
-    gap: 16px;
-    padding-top: 16px;
-    margin-top: 4px;
+    gap: 14px;
+    padding-top: 14px;
+    margin-top: 8px;
     border-top: 1px solid var(--border);
   }
-
   .controls-body.open { display: flex; }
+
+  .controls-top-row { gap: 10px; }
+  .controls-filter-row { gap: 10px; }
+  .stat-sections { grid-template-columns: 1fr; }
 
   .leaderboard-page { padding: 16px 8px 48px; gap: 12px; }
 

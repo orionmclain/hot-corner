@@ -46,6 +46,8 @@
         }
       </div>
 
+      <div class="standings-leagues">
+
       <!-- American League -->
       <div class="league-block al">
         <div class="league-label">American League</div>
@@ -53,6 +55,7 @@
           @for (div of alDivisions; track div.name) {
             <div class="division-card">
               <div class="division-title">{{ shortDivName(div.name) }}</div>
+              <div class="standings-table-scroll">
               <table class="standings-table">
                 <thead>
                   <tr>
@@ -91,6 +94,7 @@
                   }
                 </tbody>
               </table>
+              </div>
             </div>
           }
         </div>
@@ -103,6 +107,7 @@
           @for (div of nlDivisions; track div.name) {
             <div class="division-card">
               <div class="division-title">{{ shortDivName(div.name) }}</div>
+              <div class="standings-table-scroll">
               <table class="standings-table">
                 <thead>
                   <tr>
@@ -141,10 +146,13 @@
                   }
                 </tbody>
               </table>
+              </div>
             </div>
           }
         </div>
       </div>
+
+      </div><!-- /standings-leagues -->
 
     }
   }
@@ -154,7 +162,7 @@
   <!-- ══════════════════════════════════════════════════════ -->
   @if (tabView === 'leaderboard') {
 
-    <!-- Controls — sticky, collapsible on mobile, matches player leaderboard pattern -->
+    <!-- Controls -->
     <div class="lb-controls-bar">
 
       <!-- Mobile header: always visible -->
@@ -175,35 +183,70 @@
         </button>
       </div>
 
-      <!-- Desktop slider: always visible on desktop -->
-      <div class="lb-slider-always">
-        <div class="slider-row">
-          <span class="slider-bound">{{ isPitchingStat ? 3 : 5 }}</span>
-          <input class="range-input" type="range" [min]="isPitchingStat ? 3 : 5" max="50" step="1"
-            [(ngModel)]="lbStretchLength" (change)="loadTeamLeaderboard()" />
-          <span class="slider-bound">50</span>
-          <strong class="slider-val">{{ lbStretchLength }}G</strong>
-        </div>
-      </div>
-
-      <!-- Collapsible body: stat tabs + pitcher type -->
+      <!-- Collapsible body (always open desktop, toggle mobile) -->
       <div class="lb-controls-body" [class.open]="lbFiltersOpen">
-        <div class="lb-stat-group">
-          @for (group of statGroups; track group.label) {
-            @for (opt of group.options; track opt.value) {
-              <button class="stat-tab" [class.active]="selectedStat === opt.value"
-                (click)="selectStat(opt.value)">{{ opt.label }}</button>
-            }
-            @if (!$last) { <span class="stat-divider"></span> }
-          }
-        </div>
-        @if (isPitchingStat) {
-          <div class="pitcher-tabs">
-            <button class="pitcher-tab" [class.active]="pitcherType === 'sp'" (click)="selectPitcherType('sp')">SP</button>
-            <button class="pitcher-tab" [class.active]="pitcherType === 'rp'" (click)="selectPitcherType('rp')">RP</button>
+
+        <!-- Top row: slider (50%) + League + Division (hidden on mobile) -->
+        <div class="lb-top-row">
+          <div class="lb-control-group lb-slider-group">
+            <label class="lb-control-label">Stretch</label>
+            <div class="slider-row">
+              <span class="slider-bound">{{ isPitchingStat ? 3 : 5 }}</span>
+              <input class="range-input" type="range" [min]="isPitchingStat ? 3 : 5" max="50" step="1"
+                [(ngModel)]="lbStretchLength" (change)="loadTeamLeaderboard()" />
+              <span class="slider-bound">50</span>
+              <strong class="slider-val">{{ lbStretchLength }}G</strong>
+            </div>
           </div>
-        }
-      </div>
+          <div class="lb-control-group">
+            <label class="lb-control-label">League</label>
+            <select class="lb-control-select" [(ngModel)]="selectedLeague" (ngModelChange)="onLeagueChange()">
+              <option value="">All</option>
+              <option value="AL">AL</option>
+              <option value="NL">NL</option>
+            </select>
+          </div>
+          <div class="lb-control-group">
+            <label class="lb-control-label">Division</label>
+            <select class="lb-control-select" [(ngModel)]="selectedDivision">
+              <option value="">All</option>
+              @for (div of availableDivisions; track div) {
+                <option [value]="div">{{ div }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <!-- Stat sections: Hitters left, Pitchers right -->
+        <div class="lb-stat-sections">
+          <div class="lb-stat-section">
+            <span class="lb-stat-section-label">Hitters</span>
+            <div class="lb-stat-tabs">
+              @for (opt of statGroups[0].options; track opt.value) {
+                <button class="stat-tab" [class.active]="selectedStat === opt.value"
+                  (click)="selectStat(opt.value)">{{ opt.label }}</button>
+              }
+            </div>
+          </div>
+          <div class="lb-stat-section">
+            <span class="lb-stat-section-label">Pitchers</span>
+            <div class="lb-stat-tabs">
+              @for (opt of statGroups[1].options; track opt.value) {
+                <button class="stat-tab" [class.active]="selectedStat === opt.value"
+                  (click)="selectStat(opt.value)">{{ opt.label }}</button>
+              }
+            </div>
+            @if (isPitchingStat) {
+              <div class="pitcher-tabs" style="margin-top: 6px;">
+                <button class="pitcher-tab" [class.active]="pitcherType === null" (click)="selectPitcherType(null)">All</button>
+                <button class="pitcher-tab" [class.active]="pitcherType === 'sp'"  (click)="selectPitcherType('sp')">SP</button>
+                <button class="pitcher-tab" [class.active]="pitcherType === 'rp'"  (click)="selectPitcherType('rp')">RP</button>
+              </div>
+            }
+          </div>
+        </div>
+
+      </div><!-- /lb-controls-body -->
 
     </div>
 

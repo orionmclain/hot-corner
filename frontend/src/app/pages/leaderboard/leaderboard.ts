@@ -6,11 +6,28 @@ import { StatsService, LeaderboardData, LeaderboardPlayer } from '../../core/ser
 const PITCHING_STATS = new Set(['era', 'whip', 'k9', 'k', 'bb', 'er']);
 const LOWER_IS_BETTER = new Set(['era', 'whip', 'bb', 'er']);
 
-const DEFAULT_LENGTH: Record<string, number> = {
-  sp: 5,
-  rp: 5,
-  hitter: 5,
+const DEFAULT_LENGTH: Record<string, number> = { sp: 5, rp: 5, hitter: 5 };
+
+const TEAM_LEAGUE: Record<string, 'AL' | 'NL'> = {
+  NYY: 'AL', BOS: 'AL', TB:  'AL', TOR: 'AL', BAL: 'AL',
+  CLE: 'AL', CWS: 'AL', DET: 'AL', KC:  'AL', MIN: 'AL',
+  HOU: 'AL', LAA: 'AL', OAK: 'AL', SEA: 'AL', TEX: 'AL',
+  ATL: 'NL', NYM: 'NL', PHI: 'NL', MIA: 'NL', WSH: 'NL',
+  CHC: 'NL', CIN: 'NL', MIL: 'NL', PIT: 'NL', STL: 'NL',
+  ARI: 'NL', COL: 'NL', LAD: 'NL', SD:  'NL', SF:  'NL',
 };
+
+const TEAM_DIVISION: Record<string, string> = {
+  NYY: 'AL East',    BOS: 'AL East',    TB:  'AL East',    TOR: 'AL East',    BAL: 'AL East',
+  CLE: 'AL Central', CWS: 'AL Central', DET: 'AL Central', KC:  'AL Central', MIN: 'AL Central',
+  HOU: 'AL West',    LAA: 'AL West',    OAK: 'AL West',    SEA: 'AL West',    TEX: 'AL West',
+  ATL: 'NL East',    NYM: 'NL East',    PHI: 'NL East',    MIA: 'NL East',    WSH: 'NL East',
+  CHC: 'NL Central', CIN: 'NL Central', MIL: 'NL Central', PIT: 'NL Central', STL: 'NL Central',
+  ARI: 'NL West',    COL: 'NL West',    LAD: 'NL West',    SD:  'NL West',    SF:  'NL West',
+};
+
+const AL_DIVISIONS = ['AL East', 'AL Central', 'AL West'];
+const NL_DIVISIONS = ['NL East', 'NL Central', 'NL West'];
 
 @Component({
   selector: 'app-leaderboard',
@@ -31,14 +48,20 @@ export class Leaderboard implements OnInit {
   selectedStat = 'ops';
   pitcherType: 'sp' | 'rp' = 'sp';
 
-  sortBy: 'current' | 'season' | 'best' | 'worst' | 'form' = 'current';
+  sortBy: 'current' | 'season' | 'best' | 'worst' | 'form' | 'streak' = 'current';
   sortDir: 'natural' | 'reversed' = 'natural';
 
   searchQuery = '';
   selectedTeam = '';
   selectedPosition = '';
+  selectedLeague = '';
+  selectedDivision = '';
 
-  readonly hitterPositions = ['C','1B','2B','3B','SS','LF','CF','RF','OF','DH'];
+  filtersOpen = false;
+
+  readonly hitterPositions = ['C', '1B', '2B', '3B', 'SS', 'OF', 'DH'];
+  readonly pitcherPositions = ['SP', 'RP'];
+  readonly allPositions = ['SP', 'RP', 'C', '1B', '2B', '3B', 'SS', 'OF', 'DH'];
 
   private get savedState() { return this.statsService.leaderboardPageState; }
   private saveState() {
@@ -48,6 +71,8 @@ export class Leaderboard implements OnInit {
       sortBy: this.sortBy, sortDir: this.sortDir,
       searchQuery: this.searchQuery, selectedTeam: this.selectedTeam,
       selectedPosition: this.selectedPosition,
+      selectedLeague: this.selectedLeague,
+      selectedDivision: this.selectedDivision,
       data: this.data,
     });
   }
@@ -57,63 +82,79 @@ export class Leaderboard implements OnInit {
   readonly Math = Math;
   readonly LOWER_IS_BETTER = LOWER_IS_BETTER;
 
-  readonly statGroups = [
-    {
-      label: 'Hitting',
-      options: [
-        { value: 'ops', label: 'OPS' },
-        { value: 'avg', label: 'AVG' },
-        { value: 'obp', label: 'OBP' },
-        { value: 'slg', label: 'SLG' },
-        { value: 'hr',  label: 'HR'  },
-        { value: 'rbi', label: 'RBI' },
-        { value: 'sb',  label: 'SB'  },
-      ],
-    },
-    {
-      label: 'Pitching',
-      options: [
-        { value: 'era',  label: 'ERA'  },
-        { value: 'whip', label: 'WHIP' },
-        { value: 'k9',   label: 'K/9'  },
-        { value: 'k',    label: 'K'    },
-        { value: 'bb',   label: 'BB'   },
-        { value: 'er',   label: 'ER'   },
-      ],
-    },
+  readonly hitterStatOptions = [
+    { value: 'ops', label: 'OPS' }, { value: 'avg', label: 'AVG' },
+    { value: 'obp', label: 'OBP' }, { value: 'slg', label: 'SLG' },
+    { value: 'hr',  label: 'HR'  }, { value: 'rbi', label: 'RBI' },
+    { value: 'sb',  label: 'SB'  },
   ];
 
-  filtersOpen = false;
+  readonly pitcherStatOptions = [
+    { value: 'era',  label: 'ERA'  }, { value: 'whip', label: 'WHIP' },
+    { value: 'k9',   label: 'K/9'  }, { value: 'k',    label: 'K'    },
+    { value: 'bb',   label: 'BB'   }, { value: 'er',   label: 'ER'   },
+  ];
 
   get isPitchingStat() { return PITCHING_STATS.has(this.selectedStat); }
   get isCountStat()    { return ['hr', 'rbi', 'sb', 'k', 'bb', 'er'].includes(this.selectedStat); }
   get isCurrentSeason(){ return this.season === this.currentYear; }
 
   get selectedStatLabel(): string {
-    for (const g of this.statGroups) {
-      const opt = g.options.find(o => o.value === this.selectedStat);
-      if (opt) return opt.label;
-    }
-    return this.selectedStat.toUpperCase();
+    return [...this.hitterStatOptions, ...this.pitcherStatOptions]
+      .find(o => o.value === this.selectedStat)?.label ?? this.selectedStat.toUpperCase();
+  }
+
+  get availableDivisions(): string[] {
+    if (this.selectedLeague === 'AL') return AL_DIVISIONS;
+    if (this.selectedLeague === 'NL') return NL_DIVISIONS;
+    return [...AL_DIVISIONS, ...NL_DIVISIONS];
   }
 
   get availableTeams(): string[] {
     if (!this.data) return [];
-    return [...new Set(this.data.players.map(p => p.team_abbreviation))].sort();
+    return [...new Set(
+      this.data.players
+        .filter(p =>
+          (!this.selectedLeague   || TEAM_LEAGUE[p.team_abbreviation]   === this.selectedLeague) &&
+          (!this.selectedDivision || TEAM_DIVISION[p.team_abbreviation] === this.selectedDivision)
+        )
+        .map(p => p.team_abbreviation)
+    )].sort();
+  }
+
+  onLeagueChange() {
+    if (this.selectedLeague && !this.availableDivisions.includes(this.selectedDivision)) {
+      this.selectedDivision = '';
+    }
+    if (this.selectedTeam && TEAM_LEAGUE[this.selectedTeam] !== this.selectedLeague) {
+      this.selectedTeam = '';
+    }
+  }
+
+  onDivisionChange() {
+    if (this.selectedTeam && this.selectedDivision &&
+        TEAM_DIVISION[this.selectedTeam] !== this.selectedDivision) {
+      this.selectedTeam = '';
+    }
   }
 
   get filteredPlayers(): LeaderboardPlayer[] {
     if (!this.data) return [];
-    const q = this.searchQuery.toLowerCase();
-    return this.data.players.filter(p =>
-      (!q || p.name.toLowerCase().includes(q)) &&
-      (!this.selectedTeam || p.team_abbreviation === this.selectedTeam) &&
-      (!this.selectedPosition || (
-        this.selectedPosition === 'OF'
-          ? ['LF', 'CF', 'RF', 'OF'].includes(p.position)
-          : p.position === this.selectedPosition
-      ))
-    );
+    const q   = this.searchQuery.toLowerCase();
+    const pos = this.selectedPosition;
+    const seen = new Set<number>();
+    return this.data.players.filter(p => {
+      if (seen.has(p.player_id)) return false;
+      seen.add(p.player_id);
+      return (
+        (!q  || p.name.toLowerCase().includes(q)) &&
+        (!this.selectedTeam     || p.team_abbreviation === this.selectedTeam) &&
+        (!this.selectedLeague   || TEAM_LEAGUE[p.team_abbreviation]   === this.selectedLeague) &&
+        (!this.selectedDivision || TEAM_DIVISION[p.team_abbreviation] === this.selectedDivision) &&
+        (!pos || pos === 'SP' || pos === 'RP' ||
+          (pos === 'OF' ? ['LF', 'CF', 'RF', 'OF'].includes(p.position) : p.position === pos))
+      );
+    });
   }
 
   private overperformance(current: number, season: number): number {
@@ -135,36 +176,34 @@ export class Leaderboard implements OnInit {
     return [...this.filteredPlayers].sort((a, b) => {
       let av: number, bv: number;
       let lowerBetter = LOWER_IS_BETTER.has(this.selectedStat);
-      if (this.sortBy === 'current') {
-        av = a.current_value; bv = b.current_value;
-      } else if (this.sortBy === 'season') {
-        if (this.isCountStat && a.season_total != null && b.season_total != null) {
-          av = a.season_total; bv = b.season_total;
-        } else {
-          av = a.season_value; bv = b.season_value;
-        }
-      } else if (this.sortBy === 'best') {
-        av = a.best_value; bv = b.best_value;
-      } else if (this.sortBy === 'worst') {
-        av = a.worst_value; bv = b.worst_value;
-      } else {
-        av = this.overperformance(a.current_value, a.season_value);
-        bv = this.overperformance(b.current_value, b.season_value);
-        lowerBetter = false;
+      switch (this.sortBy) {
+        case 'current': av = a.current_value; bv = b.current_value; break;
+        case 'season':
+          if (this.isCountStat && a.season_total != null && b.season_total != null) {
+            av = a.season_total; bv = b.season_total;
+          } else { av = a.season_value; bv = b.season_value; }
+          break;
+        case 'best':   av = a.best_value;   bv = b.best_value;   break;
+        case 'worst':  av = a.worst_value;  bv = b.worst_value;  break;
+        case 'streak':
+          av = a.streakiness; bv = b.streakiness; lowerBetter = false; break;
+        default: // form
+          av = this.overperformance(a.current_value, a.season_value);
+          bv = this.overperformance(b.current_value, b.season_value);
+          lowerBetter = false;
       }
       const natural = lowerBetter ? av - bv : bv - av;
       return this.sortDir === 'reversed' ? -natural : natural;
     });
   }
 
-  sortArrow(col: 'current' | 'season' | 'best' | 'worst' | 'form'): string {
+  sortArrow(col: 'current' | 'season' | 'best' | 'worst' | 'form' | 'streak'): string {
     if (this.sortBy !== col) return '↕';
-    const naturalDown = col === 'form' ? true : !LOWER_IS_BETTER.has(this.selectedStat);
-    const showDown = this.sortDir === 'natural' ? naturalDown : !naturalDown;
-    return showDown ? '↓' : '↑';
+    const naturalDown = (col === 'form' || col === 'streak') ? true : !LOWER_IS_BETTER.has(this.selectedStat);
+    return (this.sortDir === 'natural' ? naturalDown : !naturalDown) ? '↓' : '↑';
   }
 
-  sort(col: 'current' | 'season' | 'best' | 'worst' | 'form') {
+  sort(col: 'current' | 'season' | 'best' | 'worst' | 'form' | 'streak') {
     if (this.sortBy === col) {
       this.sortDir = this.sortDir === 'natural' ? 'reversed' : 'natural';
     } else {
@@ -173,42 +212,61 @@ export class Leaderboard implements OnInit {
     }
   }
 
-  ngOnInit() {
-    const s = this.savedState;
-    if (s.data) {
-      ({ season: this.season, stretchLength: this.stretchLength,
-         selectedStat: this.selectedStat, pitcherType: this.pitcherType,
-         sortBy: this.sortBy, sortDir: this.sortDir,
-         searchQuery: this.searchQuery, selectedTeam: this.selectedTeam,
-         selectedPosition: this.selectedPosition,
-         data: this.data } = s);
-      return;
-    }
-
-    this.selectedStat = s.selectedStat;
-    this.pitcherType = s.pitcherType;
-
-    this.stretchLength = PITCHING_STATS.has(this.selectedStat)
-      ? DEFAULT_LENGTH[this.pitcherType]
-      : DEFAULT_LENGTH['hitter'];
-    this.load();
-  }
-
   selectStat(stat: string) {
     this.selectedStat = stat;
     this.sortDir = 'natural';
-    this.selectedPosition = '';
     if (PITCHING_STATS.has(stat)) {
-      this.stretchLength = DEFAULT_LENGTH[this.pitcherType];
+      // Clear hitter positions — but keep '' (All) or SP/RP as-is
+      if (this.selectedPosition !== '' && this.selectedPosition !== 'SP' && this.selectedPosition !== 'RP') {
+        this.selectedPosition = '';
+      }
+      this.stretchLength = DEFAULT_LENGTH['sp'];
     } else {
+      // Clear pitcher positions when switching to hitting
+      if (this.selectedPosition === 'SP' || this.selectedPosition === 'RP') {
+        this.selectedPosition = '';
+      }
       this.stretchLength = DEFAULT_LENGTH['hitter'];
     }
     this.load();
   }
 
-  selectPitcherType(type: 'sp' | 'rp') {
-    this.pitcherType = type;
-    this.stretchLength = DEFAULT_LENGTH[type];
+  selectPosition(pos: string) {
+    this.selectedPosition = pos;
+    if (pos === 'SP') {
+      this.pitcherType = 'sp';
+      if (!this.isPitchingStat) { this.selectedStat = 'era'; this.stretchLength = DEFAULT_LENGTH['sp']; }
+      this.load();
+    } else if (pos === 'RP') {
+      this.pitcherType = 'rp';
+      if (!this.isPitchingStat) { this.selectedStat = 'whip'; this.stretchLength = DEFAULT_LENGTH['rp']; }
+      this.load();
+    } else if (pos === '' && this.isPitchingStat) {
+      // Switched to "All" while on a pitching stat — reload to include all pitchers
+      this.load();
+    }
+    // Hitter positions on a hitting stat: client-side filter only, no reload
+  }
+
+  ngOnInit() {
+    const s = this.savedState;
+    // Always restore all filter state, regardless of whether data is cached
+    this.season           = s.season;
+    this.stretchLength    = s.stretchLength;
+    this.selectedStat     = s.selectedStat;
+    this.pitcherType      = s.pitcherType;
+    this.sortBy           = s.sortBy;
+    this.sortDir          = s.sortDir;
+    this.searchQuery      = s.searchQuery;
+    this.selectedTeam     = s.selectedTeam;
+    this.selectedPosition = s.selectedPosition ?? '';
+    this.selectedLeague   = s.selectedLeague   ?? '';
+    this.selectedDivision = s.selectedDivision ?? '';
+
+    if (s.data) {
+      this.data = s.data;
+      return;
+    }
     this.load();
   }
 
@@ -217,7 +275,11 @@ export class Leaderboard implements OnInit {
     this.data = null;
     this.loading = true;
     this.error = null;
-    const pt = this.isPitchingStat ? this.pitcherType : undefined;
+    // Derive pitcher_type from the position filter:
+    //   SP → 'sp', RP → 'rp', '' (All) → undefined (all pitchers)
+    const pt = this.isPitchingStat
+      ? (this.selectedPosition === 'SP' ? 'sp' : this.selectedPosition === 'RP' ? 'rp' : undefined)
+      : undefined;
     this.statsService.getLeaderboard(this.selectedStat, this.stretchLength, this.season, pt).subscribe({
       next: (d) => { this.data = d; this.loading = false; },
       error: (err) => { this.error = err.error?.detail ?? 'Failed to load leaderboard.'; this.loading = false; },
@@ -228,7 +290,7 @@ export class Leaderboard implements OnInit {
 
   dateRange(start: string, end: string): string {
     const s = new Date(start + 'T12:00:00');
-    const e = new Date(end + 'T12:00:00');
+    const e = new Date(end   + 'T12:00:00');
     const sm = Leaderboard.MONTHS[s.getMonth()];
     const em = Leaderboard.MONTHS[e.getMonth()];
     return sm === em

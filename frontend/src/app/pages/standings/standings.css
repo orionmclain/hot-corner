@@ -103,6 +103,17 @@
 /* ── STANDINGS VIEW ──────────────────────────────────────── */
 /* ══════════════════════════════════════════════════════════ */
 
+/* ── Two-column AL/NL side-by-side layout ────────────────── */
+.standings-leagues {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+/* AL on left, NL on right */
+.league-block.al { order: 1; }
+.league-block.nl { order: 2; }
+
 .league-block { display: flex; flex-direction: column; gap: 10px; }
 
 .league-label {
@@ -116,10 +127,11 @@
 .league-block.al .league-label { color: #3b82f6; }
 .league-block.nl .league-label { color: #ef4444; }
 
+/* Divisions stack vertically within each league column */
 .league-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  grid-template-columns: 1fr;
+  gap: 12px;
 }
 
 .division-card {
@@ -127,6 +139,10 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   overflow: hidden;
+}
+.standings-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .league-block.al .division-card { border-top: 2px solid #3b82f6; }
 .league-block.nl .division-card { border-top: 2px solid #ef4444; }
@@ -193,7 +209,7 @@
   font-size: 12px; font-weight: 600;
   color: var(--text-primary);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  max-width: 110px;
+  max-width: 150px;
 }
 
 .bold { font-weight: 700; color: var(--text-primary); }
@@ -218,13 +234,12 @@
 
 .lb-controls-bar {
   display: flex;
-  align-items: flex-end;
-  gap: 20px;
+  flex-direction: column;
+  gap: 0;
   padding: 16px 24px;
   background: var(--bg-primary-glass);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  flex-wrap: wrap;
   backdrop-filter: blur(12px);
   position: sticky;
   top: 56px;
@@ -236,14 +251,71 @@
 .lb-stat-chip { display: none; }
 .lb-inline-slider { display: none; }
 
-/* Desktop slider — visible on desktop, hidden on mobile */
-.lb-slider-always { display: contents; }
+/* Collapsible body — flex column on desktop, collapsible on mobile */
+.lb-controls-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
 
-/* Collapsible body — always open on desktop */
-.lb-controls-body { display: contents; }
+/* Top row: slider 50% · League 25% · Division 25% */
+.lb-top-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+}
+.lb-control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+.lb-slider-group { flex: 2; }
+.lb-slider-group .slider-row { display: flex; align-items: center; gap: 8px; height: 30px; }
+.lb-slider-group .range-input { flex: 1; width: auto; min-width: 80px; }
+.lb-control-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.lb-control-select {
+  height: 30px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 13px;
+  padding: 0 10px;
+  width: 100%;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+.lb-control-select:hover, .lb-control-select:focus { border-color: var(--accent); }
 
-.lb-stat-group { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
-.lb-right-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-left: auto; }
+/* Stat sections: 2-column grid */
+.lb-stat-sections {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+.lb-stat-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.lb-stat-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+}
+.lb-stat-tabs { display: flex; flex-wrap: wrap; gap: 4px; }
+.lb-stat-sections .stat-tab { flex: 1; justify-content: center; }
 
 .controls-toggle {
   display: inline-flex;
@@ -420,43 +492,29 @@
 .sort-arrow { margin-left: 4px; font-size: 10px; opacity: 0.7; }
 
 /* ── Responsive ──────────────────────────────────────────── */
-@media (max-width: 900px) {
-  .league-grid { grid-template-columns: 1fr; }
+@media (max-width: 860px) {
+  /* Below this width the two columns become too narrow — stack leagues */
+  .standings-leagues { grid-template-columns: 1fr; }
+  .league-block.nl, .league-block.al { order: 0; }
   .team-name-full { max-width: 200px; }
 }
 
 @media (max-width: 700px) {
   .hide-sm { display: none; }
 
-  /* Collapsible controls */
-  .lb-controls-bar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0;
-    padding: 12px 16px;
-  }
-  .lb-controls-mobile-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
+  .lb-controls-bar { padding: 12px 16px; }
+
+  /* Show mobile header */
+  .lb-controls-mobile-header { display: flex; align-items: center; gap: 8px; }
   .lb-stat-chip {
     display: block;
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--accent);
-    white-space: nowrap;
+    font-size: 13px; font-weight: 700;
+    color: var(--accent); white-space: nowrap;
   }
-  .lb-inline-slider {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex: 1;
-    min-width: 0;
-  }
+  .lb-inline-slider { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; }
   .lb-inline-slider .range-input { flex: 1; min-width: 0; width: auto; }
-  .lb-slider-always { display: none; }
 
+  /* Collapsible body */
   .lb-controls-body {
     display: none;
     flex-direction: column;
@@ -466,6 +524,12 @@
     border-top: 1px solid var(--border);
   }
   .lb-controls-body.open { display: flex; }
+
+  /* Top row: hide slider, show just league/division dropdowns */
+  .lb-top-row .lb-slider-group { display: none; }
+
+  /* Stat sections collapse to single column */
+  .lb-stat-sections { grid-template-columns: 1fr; }
 
   /* Scrollable table with Form column accessible */
   .lb-table-card { overflow-x: auto; -webkit-overflow-scrolling: touch; }

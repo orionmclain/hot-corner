@@ -169,8 +169,11 @@
 }
 
 @media (max-width: 600px) {
-  .player-grid { grid-template-columns: 1fr; }
+  .player-grid { grid-template-columns: repeat(2, 1fr); }
   .team-name   { font-size: 20px; }
+  .player-card { flex-direction: column; align-items: flex-start; gap: 8px; padding: 10px 12px; }
+  .player-thumb { width: 38px; height: 38px; }
+  .player-card-name { font-size: 12px; }
 }
 
 /* ── Team Performance Chart ─────────────────────── */

@@ -11,6 +11,8 @@
 
   <!-- ── Controls ── -->
   <div class="controls-bar">
+
+    <!-- Mobile header: stat chip + compact slider + toggle -->
     <div class="controls-mobile-header">
       <span class="controls-stat-chip">{{ selectedStatLabel }}</span>
       <div class="slider-row controls-inline-slider">
@@ -22,83 +24,109 @@
       </div>
       <button class="controls-toggle" (click)="filtersOpen = !filtersOpen">
         Filters
-        <svg class="toggle-chevron" [class.open]="filtersOpen" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
+        <svg class="toggle-chevron" [class.open]="filtersOpen" width="14" height="14"
+          viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="m6 9 6 6 6-6"/>
+        </svg>
       </button>
     </div>
 
-    <div class="control-group slider-always">
-      <label class="control-label">Stretch</label>
-      <div class="slider-row">
-        <span class="slider-bound">{{ isPitchingStat ? 3 : 5 }}</span>
-        <input class="range-input" type="range" [min]="isPitchingStat ? 3 : 5" max="50" step="1"
-          [(ngModel)]="stretchLength" (change)="load()" />
-        <span class="slider-bound">50</span>
-        <strong class="slider-value">{{ stretchLength }}G</strong>
-      </div>
-    </div>
-
+    <!-- Collapsible body (always visible desktop, toggle on mobile) -->
     <div class="controls-body" [class.open]="filtersOpen">
-      <div class="control-group">
-        <label class="control-label">Season</label>
-        <select class="control-select" [(ngModel)]="season" (change)="load()">
-          @for (yr of seasons; track yr) { <option [value]="yr">{{ yr }}</option> }
-        </select>
-      </div>
 
-      <div class="control-group stat-group">
-        <label class="control-label">Stat</label>
-        <div class="stat-tabs">
-          @for (group of statGroups; track group.label) {
-            @for (opt of group.options; track opt.value) {
-              <button
-                class="stat-tab"
-                [class.active]="selectedStat === opt.value"
-                (click)="selectStat(opt.value)"
-              >{{ opt.label }}</button>
-            }
-            @if (!$last) { <span class="stat-divider"></span> }
-          }
-        </div>
-      </div>
-
-      @if (isPitchingStat) {
-        <div class="control-group">
-          <label class="control-label">Pitcher Type</label>
-          <div class="pitcher-tabs">
-            <button class="pitcher-tab" [class.active]="pitcherType === 'sp'" (click)="selectPitcherType('sp')">SP</button>
-            <button class="pitcher-tab" [class.active]="pitcherType === 'rp'" (click)="selectPitcherType('rp')">RP</button>
+      <!-- Row 1: Stretch slider (desktop) · Search · Season -->
+      <div class="controls-top-row">
+        <div class="control-group slider-group">
+          <label class="control-label">Stretch</label>
+          <div class="slider-row">
+            <span class="slider-bound">{{ isPitchingStat ? 3 : 5 }}</span>
+            <input class="range-input" type="range" [min]="isPitchingStat ? 3 : 5" max="50" step="1"
+              [(ngModel)]="stretchLength" (change)="load()" />
+            <span class="slider-bound">50</span>
+            <strong class="slider-value">{{ stretchLength }}G</strong>
           </div>
         </div>
-      }
 
-      @if (!isPitchingStat) {
+        <div class="control-group search-group">
+          <label class="control-label">Search</label>
+          <input class="search-input" type="text" placeholder="Player name…" [(ngModel)]="searchQuery" />
+        </div>
+
+        <div class="control-group season-group">
+          <label class="control-label">Season</label>
+          <select class="control-select" [(ngModel)]="season" (change)="load()">
+            @for (yr of seasons; track yr) { <option [value]="yr">{{ yr }}</option> }
+          </select>
+        </div>
+      </div>
+
+      <!-- Row 2: Position · League · Division · Team -->
+      <div class="controls-filter-row">
         <div class="control-group">
           <label class="control-label">Position</label>
-          <div class="pos-chips">
-            <button class="pos-chip" [class.active]="selectedPosition === ''" (click)="selectedPosition = ''">All</button>
-            @for (pos of hitterPositions; track pos) {
-              <button class="pos-chip" [class.active]="selectedPosition === pos" (click)="selectedPosition = pos">{{ pos }}</button>
+          <select class="control-select" [(ngModel)]="selectedPosition"
+            (ngModelChange)="selectPosition($event)">
+            <option value="">All</option>
+            @for (pos of allPositions; track pos) {
+              <option [value]="pos">{{ pos }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label class="control-label">League</label>
+          <select class="control-select" [(ngModel)]="selectedLeague" (ngModelChange)="onLeagueChange()">
+            <option value="">All</option>
+            <option value="AL">AL</option>
+            <option value="NL">NL</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label class="control-label">Division</label>
+          <select class="control-select" [(ngModel)]="selectedDivision" (ngModelChange)="onDivisionChange()">
+            <option value="">All</option>
+            @for (div of availableDivisions; track div) {
+              <option [value]="div">{{ div }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label class="control-label">Team</label>
+          <select class="control-select" [(ngModel)]="selectedTeam">
+            <option value="">All Teams</option>
+            @for (team of availableTeams; track team) {
+              <option [value]="team">{{ team }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <!-- Stat sections: Hitters left, Pitchers right (desktop 2-col grid) -->
+      <div class="stat-sections">
+        <div class="stat-section">
+          <span class="stat-section-label">Hitters</span>
+          <div class="stat-tabs">
+            @for (opt of hitterStatOptions; track opt.value) {
+              <button class="stat-tab" [class.active]="selectedStat === opt.value"
+                (click)="selectStat(opt.value)">{{ opt.label }}</button>
             }
           </div>
         </div>
-      }
-
-      <div class="control-group">
-        <label class="control-label">Team</label>
-        <select class="control-select" [(ngModel)]="selectedTeam">
-          <option value="">All Teams</option>
-          @for (team of availableTeams; track team) {
-            <option [value]="team">{{ team }}</option>
-          }
-        </select>
+        <div class="stat-section">
+          <span class="stat-section-label">Pitchers</span>
+          <div class="stat-tabs">
+            @for (opt of pitcherStatOptions; track opt.value) {
+              <button class="stat-tab" [class.active]="selectedStat === opt.value"
+                (click)="selectStat(opt.value)">{{ opt.label }}</button>
+            }
+          </div>
+        </div>
       </div>
 
-      <div class="control-group search-group">
-        <label class="control-label">Search</label>
-        <input class="search-input" type="text" placeholder="Player name…" [(ngModel)]="searchQuery" />
-      </div>
-    </div>
-  </div>
+    </div><!-- /controls-body -->
+  </div><!-- /controls-bar -->
 
   <!-- ── Results summary ── -->
   @if (data && !loading) {
@@ -115,14 +143,14 @@
   <div class="lb-table-card">
     @if (loading) {
       <div class="lb-loading">
-        <svg class="spin" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5">
+        <svg class="spin" width="24" height="24" viewBox="0 0 24 24" fill="none"
+          stroke="#10b981" stroke-width="2.5">
           <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
         </svg>
         <span>Computing current stretches…</span>
       </div>
     } @else if (error) {
       <div class="lb-error">⚠️ {{ error }}</div>
-
     } @else if (data) {
       <table class="lb-table">
         <thead>
@@ -145,16 +173,19 @@
             <th class="val-col sortable" [class.sorted]="sortBy === 'worst'" (click)="sort('worst')">
               Worst <span class="sort-arrow">{{ sortArrow('worst') }}</span>
             </th>
+            <th class="streak-col sortable hide-sm" [class.sorted]="sortBy === 'streak'" (click)="sort('streak')">
+              Streak% <span class="sort-arrow">{{ sortArrow('streak') }}</span>
+            </th>
             <th class="sortable" [class.sorted]="sortBy === 'form'" (click)="sort('form')">
               Form <span class="sort-arrow">{{ sortArrow('form') }}</span>
             </th>
           </tr>
         </thead>
         <tbody>
-          @for (p of sortedPlayers; track p.player_id; let i = $index) {
+          @for (p of sortedPlayers; track p.player_id) {
             <tr class="lb-row" (click)="goToPlayer(p)">
               <td class="rank-cell">
-                <span [class]="'rank-badge rank-' + Math.min(i + 1, 4)">{{ i + 1 }}</span>
+                <span [class]="'rank-badge rank-' + Math.min(p.rank, 4)">{{ p.rank }}</span>
               </td>
               <td class="player-cell">
                 <div class="player-cell-inner">
@@ -177,6 +208,12 @@
                 <span class="worst-val">{{ p.worst_value_display }}</span>
                 <span class="stretch-dates">{{ dateRange(p.worst_start_date, p.worst_end_date) }}</span>
               </td>
+              <td class="streak-cell hide-sm" [class.sorted]="sortBy === 'streak'">
+                <div class="cv-bar-track">
+                  <div class="cv-bar-fill" [style.width.%]="Math.min(p.streakiness, 100)"></div>
+                </div>
+                <span class="cv-label">{{ p.streakiness > 99 ? '>99' : p.streakiness }}%</span>
+              </td>
               <td class="form-cell" [class.sorted]="sortBy === 'form'">
                 <div class="form-cell-inner">
                   @if (isCurrentSeason) {
@@ -191,7 +228,8 @@
                     </div>
                     <span class="cv-label">{{ p.streakiness > 99 ? '>99' : p.streakiness }}%</span>
                   }
-                  <span class="form-delta" [class.positive]="formDeltaPct(p) > 0" [class.negative]="formDeltaPct(p) < 0">
+                  <span class="form-delta" [class.positive]="formDeltaPct(p) > 0"
+                    [class.negative]="formDeltaPct(p) < 0">
                     {{ formDeltaDisplay(p) }} vs avg
                   </span>
                 </div>
